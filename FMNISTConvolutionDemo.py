@@ -5,30 +5,62 @@ import matplotlib.pyplot as plt
 import numpy as np
 from GraphTsetlinMachine.graphs import Graphs
 from GraphTsetlinMachine.tm import MultiClassGraphTsetlinMachine
-from keras.api.datasets import mnist
+from keras.api.datasets import fashion_mnist
 from matplotlib import colors
 from seaborn import color_palette
-from skimage.util import view_as_windows
 from tqdm import tqdm
 
-(X_train, Y_train), (X_test, Y_test) = mnist.load_data()
+(X_train_org, Y_train), (X_test_org, Y_test) = fashion_mnist.load_data()
 
-X_train = X_train[:1000]
-Y_train = Y_train[:1000]
-X_test = X_test[:1000]
-Y_test = Y_test[:1000]
+label_names = {
+    0: "T-shirt/top",
+    1: "Trouser",
+    2: "Pullover",
+    3: "Dress",
+    4: "Coat",
+    5: "Sandal",
+    6: "Shirt",
+    7: "Sneaker",
+    8: "Bag",
+    9: "Ankle boot",
+}
 
-X_train = np.where(X_train > 75, 1, 0)
-X_test = np.where(X_test > 75, 1, 0)
+# X_train_org = X_train_org[:1000]
+# Y_train = Y_train[:1000]
+# X_test_org = X_test_org[:1000]
+# Y_test = Y_test[:1000]
+
+resolution = 8
+patch_size = 3
+dim = 28 - patch_size + 1
+
+X_train = np.empty((*X_train_org.shape, resolution), dtype=np.uint8)
+X_test = np.empty((*X_test_org.shape, resolution), dtype=np.uint8)
+
+# Quantize pixel values
+for z in range(resolution):
+    threshold = (z + 1) * 255 / (resolution + 1)
+    X_train[..., z] = (X_train_org >= threshold) & 1
+    X_test[..., z] = (X_test_org >= threshold) & 1
+
 Y_train = Y_train.astype(np.uint32)
 Y_test = Y_test.astype(np.uint32)
 
 
+def f(b):
+    nz = np.argwhere(b).ravel()
+    return nz[-1] if len(nz) > 0 else 0
+
+
+def unbinarize(a):
+    return np.apply_along_axis(f, -1, a)
+
+
 def default_args(**kwargs):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--epochs", default=5, type=int)
-    parser.add_argument("--number-of-clauses", default=2500, type=int)
-    parser.add_argument("--T", default=3125, type=int)
+    parser.add_argument("--epochs", default=50, type=int)
+    parser.add_argument("--number-of-clauses", default=40000, type=int)
+    parser.add_argument("--T", default=15000, type=int)
     parser.add_argument("--s", default=10.0, type=float)
     parser.add_argument("--number-of-state-bits", default=8, type=int)
     parser.add_argument("--depth", default=1, type=int)
@@ -39,7 +71,7 @@ def default_args(**kwargs):
     parser.add_argument(
         "--double-hashing", dest="double_hashing", default=False, action="store_true"
     )
-    parser.add_argument("--max-included-literals", default=32, type=int)
+    # parser.add_argument("--max-included-literals", default=32, type=int)
 
     args = parser.parse_args()
     for key, value in kwargs.items():
@@ -50,11 +82,7 @@ def default_args(**kwargs):
 
 args = default_args()
 
-patch_size = 10
-dim = 28 - patch_size + 1
-
 number_of_nodes = dim * dim
-
 symbols = []
 
 # Column and row symbols
@@ -63,7 +91,7 @@ for i in range(dim):
     symbols.append("R:%d" % (i))
 
 # Patch pixel symbols
-for i in range(patch_size * patch_size):
+for i in range(patch_size * patch_size * resolution):
     symbols.append(i)
 
 graphs_train = Graphs(
@@ -85,21 +113,16 @@ for graph_id in range(X_train.shape[0]):
 
 graphs_train.prepare_edge_configuration()
 
-for graph_id in range(X_train.shape[0]):
-    if graph_id % 1000 == 0:
-        print(graph_id, X_train.shape[0])
+for graph_id in tqdm(range(X_train.shape[0])):
+    for node_id in range(number_of_nodes):
+        x, y = node_id // dim, node_id % dim
+        patch = X_train[graph_id, x : x + patch_size, y : y + patch_size].flatten()
 
-    windows = view_as_windows(X_train[graph_id, :, :], (patch_size, patch_size))
-    for q in range(windows.shape[0]):
-        for r in range(windows.shape[1]):
-            node_id = q * dim + r
+        graphs_train.add_graph_node_property(graph_id, node_id, "R:%d" % (x))
+        graphs_train.add_graph_node_property(graph_id, node_id, "C:%d" % (y))
 
-            patch = windows[q, r].reshape(-1).astype(np.uint32)
-            for k in patch.nonzero()[0]:
-                graphs_train.add_graph_node_property(graph_id, node_id, k)
-
-            graphs_train.add_graph_node_property(graph_id, node_id, "C:%d" % (q))
-            graphs_train.add_graph_node_property(graph_id, node_id, "R:%d" % (r))
+        for p in patch.nonzero()[0]:
+            graphs_train.add_graph_node_property(graph_id, node_id, p)
 
 graphs_train.encode()
 
@@ -117,21 +140,16 @@ for graph_id in range(X_test.shape[0]):
 
 graphs_test.prepare_edge_configuration()
 
-for graph_id in range(X_test.shape[0]):
-    if graph_id % 1000 == 0:
-        print(graph_id, X_test.shape[0])
+for graph_id in tqdm(range(X_test.shape[0])):
+    for node_id in range(number_of_nodes):
+        x, y = node_id // dim, node_id % dim
+        patch = X_test[graph_id, x : x + patch_size, y : y + patch_size].flatten()
 
-    windows = view_as_windows(X_test[graph_id, :, :], (10, 10))
-    for q in range(windows.shape[0]):
-        for r in range(windows.shape[1]):
-            node_id = q * dim + r
+        graphs_test.add_graph_node_property(graph_id, node_id, "R:%d" % (x))
+        graphs_test.add_graph_node_property(graph_id, node_id, "C:%d" % (y))
 
-            patch = windows[q, r].reshape(-1).astype(np.uint32)
-            for k in patch.nonzero()[0]:
-                graphs_test.add_graph_node_property(graph_id, node_id, k)
-
-            graphs_test.add_graph_node_property(graph_id, node_id, "C:%d" % (q))
-            graphs_test.add_graph_node_property(graph_id, node_id, "R:%d" % (r))
+        for p in patch.nonzero()[0]:
+            graphs_test.add_graph_node_property(graph_id, node_id, p)
 
 graphs_test.encode()
 
@@ -145,7 +163,7 @@ tm = MultiClassGraphTsetlinMachine(
     depth=args.depth,
     message_size=args.message_size,
     message_bits=args.message_bits,
-    max_included_literals=args.max_included_literals,
+    # max_included_literals=args.max_included_literals,
     double_hashing=args.double_hashing,
 )
 
@@ -201,7 +219,7 @@ for e in [0, 1, 2]:
     print(f"{pred=}")
 
     # clause_literals -> (num_clauses, 2*num_symbols)
-    position_symbols = 38
+    position_symbols = 2 * dim
     total_symbols = len(graphs_test.symbol_id)
 
     # clause_outputs -> (num_samples, num_clauses, num_nodes)
@@ -216,20 +234,29 @@ for e in [0, 1, 2]:
         neg_literals = clause_literals[
             c, total_symbols + position_symbols : 2 * total_symbols
         ]
+        pos_literals = unbinarize(
+            pos_literals.reshape((patch_size, patch_size, resolution))
+        )
+        neg_literals = unbinarize(
+            neg_literals.reshape((patch_size, patch_size, resolution))
+        )
 
         eff_literals = pos_literals - neg_literals
-
-        pos_literals = pos_literals.reshape((10, 10))
-        neg_literals = neg_literals.reshape((10, 10))
-        eff_literals = eff_literals.reshape((10, 10))
+        # eff_literals = eff_literals.reshape((patch_size, patch_size, resolution))
 
         for node_id in range(np.max(graphs_test.number_of_graph_nodes)):
-            xpos, ypos = node_id // 19, node_id % 19
+            xpos, ypos = node_id // dim, node_id % dim
 
             if co[c, node_id] == 1:
-                final_imgs[0, xpos : xpos + 10, ypos : ypos + 10] += pos_literals * w
-                final_imgs[1, xpos : xpos + 10, ypos : ypos + 10] += neg_literals * w
-                final_imgs[2, xpos : xpos + 10, ypos : ypos + 10] += eff_literals * w
+                final_imgs[0, xpos : xpos + patch_size, ypos : ypos + patch_size] += (
+                    pos_literals * w
+                )
+                final_imgs[1, xpos : xpos + patch_size, ypos : ypos + patch_size] += (
+                    neg_literals * w
+                )
+                final_imgs[2, xpos : xpos + patch_size, ypos : ypos + patch_size] += (
+                    eff_literals * w
+                )
 
     # Matplotlib visualization shenanigans
     rocket = color_palette("rocket", as_cmap=True)
@@ -241,7 +268,7 @@ for e in [0, 1, 2]:
     )
 
     fig, axs = plt.subplots(1, 4, figsize=(10, 5), layout="compressed", squeeze=False)
-    axs[0, 0].imshow(X_test[e])
+    axs[0, 0].imshow(unbinarize(X_test[e]))
     axs[0, 1].imshow(final_imgs[0], cmap=cmap)
     axs[0, 2].imshow(final_imgs[1], cmap=cmap)
     axs[0, 3].imshow(final_imgs[2], cmap=fullcmap)
@@ -254,5 +281,5 @@ for e in [0, 1, 2]:
     for ax in axs.ravel():
         ax.axis("off")
 
-    fig.savefig(f"figs/mnist_test_{pred}.png")
+    fig.savefig(f"figs/fmnist_test_{label_names[int(pred)]}.png")
     plt.show()
