@@ -59,13 +59,13 @@ def unbinarize(a):
 def default_args(**kwargs):
     parser = argparse.ArgumentParser()
     parser.add_argument("--epochs", default=50, type=int)
-    parser.add_argument("--number-of-clauses", default=40000, type=int)
-    parser.add_argument("--T", default=15000, type=int)
-    parser.add_argument("--s", default=10.0, type=float)
+    parser.add_argument("--number-of-clauses", default=8000, type=int)
+    parser.add_argument("--T", default=10000, type=int)
+    parser.add_argument("--s", default=15.0, type=float)
     parser.add_argument("--number-of-state-bits", default=8, type=int)
     parser.add_argument("--depth", default=1, type=int)
-    parser.add_argument("--hypervector-size", default=128, type=int)
-    parser.add_argument("--hypervector-bits", default=2, type=int)
+    parser.add_argument("--hypervector-size", default=64, type=int)
+    parser.add_argument("--hypervector-bits", default=4, type=int)
     parser.add_argument("--message-size", default=512, type=int)
     parser.add_argument("--message-bits", default=2, type=int)
     parser.add_argument(
