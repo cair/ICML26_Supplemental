@@ -5,27 +5,28 @@ from GraphTsetlinMachine.tm import MultiClassGraphTsetlinMachine
 from time import time
 import argparse
 import random
+random.seed(42)
 
 
 def default_args(**kwargs):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--epochs", default=10, type=int)
-    parser.add_argument("--number-of-clauses", default=10, type=int)
-    parser.add_argument("--T", default=100, type=int)
-    parser.add_argument("--s", default=2.0, type=float)
+    parser.add_argument("--epochs", default=50, type=int)
+    parser.add_argument("--number-of-clauses", default=60, type=int)
+    parser.add_argument("--T", default=200, type=int)
+    parser.add_argument("--s", default=1.5, type=float)
     parser.add_argument("--number-of-state-bits", default=8, type=int)
     # parser.add_argument("--q", default=0.5, type=float)
     parser.add_argument("--depth", default=2, type=int)
-    parser.add_argument("--hypervector-size", default=8, type=int)
+    parser.add_argument("--hypervector-size", default=64, type=int)
     parser.add_argument("--hypervector-bits", default=2, type=int)
-    parser.add_argument("--message-size", default=16, type=int)
+    parser.add_argument("--message-size", default=64, type=int)
     parser.add_argument("--message-bits", default=2, type=int)
     parser.add_argument(
         "--double-hashing", dest="double_hashing", default=False, action="store_true"
     )
-    parser.add_argument("--noise", default=0.01, type=float)
-    parser.add_argument("--number-of-values", default=2, type=int)
-    parser.add_argument("--number-of-examples", default=10000, type=int)
+    parser.add_argument("--noise", default=0.05, type=float)
+    parser.add_argument("--number-of-values", default=4, type=int)
+    parser.add_argument("--number-of-examples", default=100000, type=int)
     parser.add_argument("--max-included-literals", default=4, type=int)
 
     args = parser.parse_args()
@@ -67,6 +68,7 @@ for graph_id in range(args.number_of_examples):
 
 graphs_train.prepare_edge_configuration()
 
+X_train = np.empty((args.number_of_examples, 2))
 Y_train = np.empty(args.number_of_examples, dtype=np.uint32)
 for graph_id in range(args.number_of_examples):
     edge_type = "Plain"
@@ -84,6 +86,7 @@ for graph_id in range(args.number_of_examples):
 
     x1 = random.choice(symbols)
     x2 = random.choice(symbols)
+    X_train[graph_id] = np.array([x1, x2])
     if (x1 % 2) == (x2 % 2):
         Y_train[graph_id] = 0
     else:
@@ -97,6 +100,7 @@ for graph_id in range(args.number_of_examples):
 
 graphs_train.encode()
 
+print(f"{graphs_train.hypervectors=}")
 # Create testing data
 
 print("Creating testing data")
@@ -115,6 +119,7 @@ for graph_id in range(args.number_of_examples):
 
 graphs_test.prepare_edge_configuration()
 
+X_test = np.empty((args.number_of_examples, 2))
 Y_test = np.empty(args.number_of_examples, dtype=np.uint32)
 for graph_id in range(args.number_of_examples):
     edge_type = "Plain"
@@ -132,6 +137,7 @@ for graph_id in range(args.number_of_examples):
 
     x1 = random.choice(symbols)
     x2 = random.choice(symbols)
+    X_test[graph_id] = np.array([x1, x2])
     if (x1 % 2) == (x2 % 2):
         Y_test[graph_id] = 0
     else:
@@ -142,162 +148,173 @@ for graph_id in range(args.number_of_examples):
 
 graphs_test.encode()
 
-tm = MultiClassGraphTsetlinMachine(
-    args.number_of_clauses,
-    args.T,
-    args.s,
-    number_of_state_bits=args.number_of_state_bits,
-    depth=args.depth,
-    message_size=args.message_size,
-    message_bits=args.message_bits,
-    # max_included_literals=args.max_included_literals,
-    double_hashing=args.double_hashing,
-)
-
-for i in range(args.epochs):
-    start_training = time()
-    tm.fit(graphs_train, Y_train, epochs=1, incremental=True)
-    stop_training = time()
-
-    start_testing = time()
-    result_test = 100 * (tm.predict(graphs_test) == Y_test).mean()
-    stop_testing = time()
-
-    result_train = 100 * (tm.predict(graphs_train) == Y_train).mean()
-
-    print(
-        "%d %.2f %.2f %.2f %.2f"
-        % (
-            i,
-            result_train,
-            result_test,
-            stop_training - start_training,
-            stop_testing - start_testing,
-        )
+for r in range(5):
+    tm = MultiClassGraphTsetlinMachine(
+        args.number_of_clauses,
+        args.T,
+        args.s,
+        number_of_state_bits=args.number_of_state_bits,
+        depth=args.depth,
+        message_size=args.message_size,
+        message_bits=args.message_bits,
+        # max_included_literals=args.max_included_literals,
+        double_hashing=args.double_hashing,
     )
+    train_acc, test_acc = [], []
+    for i in range(args.epochs):
+        start_training = time()
+        tm.fit(graphs_train, Y_train, epochs=1, incremental=True)
+        stop_training = time()
 
-weights = tm.get_state()[1].reshape(2, -1)
-for i in range(tm.number_of_clauses):
-    print("Clause #%d W:(%d %d)" % (i, weights[0, i], weights[1, i]), end=" ")
-    l = []
-    for k in range(args.hypervector_size * 2):
-        if tm.ta_action(0, i, k):
-            if k < args.hypervector_size:
-                l.append("x%d" % (k))
-            else:
-                l.append("NOT x%d" % (k - args.hypervector_size))
+        start_testing = time()
+        result_test = 100 * (tm.predict(graphs_test) == Y_test).mean()
+        stop_testing = time()
 
-    # for k in range(args.message_size * 2):
-    #     if tm.ta_action(1, i, k):
-    #         if k < args.message_size:
-    #             l.append("c%d" % (k))
-    #         else:
-    #             l.append("NOT c%d" % (k - args.message_size))
+        result_train = 100 * (tm.predict(graphs_train) == Y_train).mean()
 
-    print(" AND ".join(l))
+        train_acc.append(result_train)
+        test_acc.append(result_test)
+
+        print(
+            "%d %.2f %.2f %.2f %.2f"
+            % (
+                i,
+                result_train,
+                result_test,
+                stop_training - start_training,
+                stop_testing - start_testing,
+            )
+        )
+
+    print(f"Mean over epochs: train - { sum(train_acc) / args.epochs }, test - {sum(test_acc) / args.epochs}")
+
+# weights = tm.get_state()[1].reshape(2, -1)
+# for i in range(tm.number_of_clauses):
+#     print("Clause #%d W:(%d %d)" % (i, weights[0, i], weights[1, i]), end=" ")
+#     l = []
+#     for k in range(args.hypervector_size * 2):
+#         if tm.ta_action(0, i, k):
+#             if k < args.hypervector_size:
+#                 l.append("x%d" % (k))
+#             else:
+#                 l.append("NOT x%d" % (k - args.hypervector_size))
+#
+#     # for k in range(args.message_size * 2):
+#     #     if tm.ta_action(1, i, k):
+#     #         if k < args.message_size:
+#     #             l.append("c%d" % (k))
+#     #         else:
+#     #             l.append("NOT c%d" % (k - args.message_size))
+#
+#     print(" AND ".join(l))
 
 # print(graphs_test.hypervectors)
 # print(tm.hypervectors)
-print(graphs_test.edge_type_id)
+# print(graphs_test.edge_type_id)
 
 
-print(f"{graphs_train.hypervectors=}")
-print(f"{tm.hypervectors=}")
-print("Feature literals")
-for clause in range(tm.number_of_clauses):
-    print(
-        f"Clause {clause} [{weights[0, clause]:>4d} {weights[1, clause]:>4d}]", end=": "
-    )
-    print(
-        *[
-            int(tm.ta_action(depth=0, clause=clause, ta=i))
-            for i in range(graphs_train.hypervector_size * 2)
-        ]
-    )
-print()
+# print(f"{graphs_train.hypervectors=}")
+# print(f"{tm.hypervectors=}")
+# print("Feature literals")
+# for clause in range(tm.number_of_clauses):
+#     print(
+#         f"Clause {clause} [{weights[0, clause]:>4d} {weights[1, clause]:>4d}]", end=": "
+#     )
+#     print(
+#         *[
+#             int(tm.ta_action(depth=0, clause=clause, ta=i))
+#             for i in range(graphs_train.hypervector_size * 2)
+#         ]
+#     )
+# print()
+#
+# print("Message literals")
+# for clause in range(tm.number_of_clauses):
+#     print(
+#         f"Clause {clause} [{weights[0, clause]:>4d} {weights[1, clause]:>4d}]", end=": "
+#     )
+#     print(
+#         *[
+#             int(tm.ta_action(depth=1, clause=clause, ta=i))
+#             for i in range(tm.message_size * 2)
+#         ]
+#     )
 
-print("Message literals")
-for clause in range(tm.number_of_clauses):
-    print(
-        f"Clause {clause} [{weights[0, clause]:>4d} {weights[1, clause]:>4d}]", end=": "
-    )
-    print(
-        *[
-            int(tm.ta_action(depth=1, clause=clause, ta=i))
-            for i in range(tm.message_size * 2)
-        ]
-    )
+# clause_literals = tm.get_clause_literals(graphs_train.hypervectors)
+# message_clauses = tm.get_messages(1, len(graphs_train.edge_type_id))
+#
+# # Get Clauses in symbols format and Messages in clause_indices format
+# clause_literals = tm.get_clause_literals(graphs_train.hypervectors)
+# message_clauses = tm.get_messages(1, len(graphs_train.edge_type_id))
+# num_symbols = len(graphs_train.symbol_id)
+#
+# # Create symbol_id to symbol_name dictionary for printing symbol names
+# symbol_dict = dict((v, chr(65 + k)) for k, v in graphs_train.symbol_id.items())
 
-clause_literals = tm.get_clause_literals(graphs_train.hypervectors)
-message_clauses = tm.get_messages(1, len(graphs_train.edge_type_id))
 
-# Get Clauses in symbols format and Messages in clause_indices format
-clause_literals = tm.get_clause_literals(graphs_train.hypervectors)
-message_clauses = tm.get_messages(1, len(graphs_train.edge_type_id))
-num_symbols = len(graphs_train.symbol_id)
+# print("Actual clauses:")
+# for clause in range(tm.number_of_clauses):
+#     print(
+#         f"Clause {clause} [{weights[0, clause]:>4d} {weights[1, clause]:>4d}]", end=": "
+#     )
+#     for literal in range(num_symbols):
+#         if clause_literals[clause, literal] > 0:
+#             print(f"{clause_literals[clause, literal]}{symbol_dict[literal]}", end=" ")
+#
+#         if clause_literals[clause, literal + num_symbols] > 0:
+#             print(
+#                 f"~{clause_literals[clause, literal + num_symbols]}{symbol_dict[literal]}",
+#                 end=" ",
+#             )
+#
+#     print("")
+#
+# # Print messages for each edge type
+# for edge_type in range(len(graphs_train.edge_type_id)):
+#     print(f"Actual Messages for {edge_type=}:")
+#
+#     for msg in range(tm.number_of_clauses):
+#         print(f"Message {msg} ", end=": ")
+#
+#         for clause in range(tm.number_of_clauses):
+#             if message_clauses[edge_type, msg, clause] > 0:
+#                 print(f"{message_clauses[edge_type, msg, clause]}C:{clause}(", end=" ")
+#
+#                 for literal in range(num_symbols):
+#                     if clause_literals[clause, literal] > 0:
+#                         print(
+#                             f"{clause_literals[clause, literal]}{symbol_dict[literal]}",
+#                             end=" ",
+#                         )
+#
+#                     if clause_literals[clause, literal + num_symbols] > 0:
+#                         print(
+#                             f"~{clause_literals[clause, literal + num_symbols]}{symbol_dict[literal]}",
+#                             end=" ",
+#                         )
+#
+#                 print(")", end=" ")
+#
+#             if message_clauses[edge_type, msg, tm.number_of_clauses + clause] > 0:
+#                 print(
+#                     f"~{message_clauses[edge_type, msg, tm.number_of_clauses + clause]}C:{clause}(",
+#                     end=" ",
+#                 )
+#
+#                 for literal in range(num_symbols):
+#                     if clause_literals[clause, literal] > 0:
+#                         print(
+#                             f"{clause_literals[clause, literal]}{symbol_dict[literal]}",
+#                             end=" ",
+#                         )
+#
+#                     if clause_literals[clause, literal + num_symbols] > 0:
+#                         print(
+#                             f"~{clause_literals[clause, literal + num_symbols]}{symbol_dict[literal]}",
+#                             end=" ",
+#                         )
+#
+#                 print(")", end=" ")
+#
+#         print("")
 
-# Create symbol_id to symbol_name dictionary for printing symbol names
-symbol_dict = dict((v, chr(65+k)) for k, v in graphs_train.symbol_id.items())
-
-print("Actual clauses:")
-for clause in range(tm.number_of_clauses):
-    print(
-        f"Clause {clause} [{weights[0, clause]:>4d} {weights[1, clause]:>4d}]", end=": "
-    )
-    for literal in range(num_symbols):
-        if clause_literals[clause, literal] > 0:
-            print(f"{clause_literals[clause, literal]}{symbol_dict[literal]}", end=" ")
-
-        if clause_literals[clause, literal + num_symbols] > 0:
-            print(
-                f"~{clause_literals[clause, literal + num_symbols]}{symbol_dict[literal]}",
-                end=" ",
-            )
-
-    print("")
-
-# Print messages for each edge type
-for edge_type in range(len(graphs_train.edge_type_id)):
-    print(f"Actual Messages for {edge_type=}:")
-
-    for msg in range(tm.number_of_clauses):
-        print(f"Message {msg} ", end=": ")
-
-        for clause in range(tm.number_of_clauses):
-            if message_clauses[edge_type, msg, clause] == 1:
-                print(f"C:{clause}(", end=" ")
-
-                for literal in range(num_symbols):
-                    if clause_literals[clause, literal] > 0:
-                        print(
-                            f"{clause_literals[clause, literal]}{symbol_dict[literal]}",
-                            end=" ",
-                        )
-
-                    if clause_literals[clause, literal + num_symbols] > 0:
-                        print(
-                            f"~{clause_literals[clause, literal + num_symbols]}{symbol_dict[literal]}",
-                            end=" ",
-                        )
-
-                print(")", end=" ")
-
-            if message_clauses[edge_type, msg, tm.number_of_clauses + clause] == 1:
-                print(f"~C:{clause}(", end=" ")
-
-                for literal in range(num_symbols):
-                    if clause_literals[clause, literal] > 0:
-                        print(
-                            f"{clause_literals[clause, literal]}{symbol_dict[literal]}",
-                            end=" ",
-                        )
-
-                    if clause_literals[clause, literal + num_symbols] > 0:
-                        print(
-                            f"~{clause_literals[clause, literal + num_symbols]}{symbol_dict[literal]}",
-                            end=" ",
-                        )
-
-                print(")", end=" ")
-
-        print("")

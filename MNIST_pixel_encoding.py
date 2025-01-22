@@ -29,15 +29,15 @@ Y_test = Y_test.astype(np.uint32)
 
 def default_args(**kwargs):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--epochs", default=5, type=int)
-    parser.add_argument("--number-of-clauses", default=30, type=int)
-    parser.add_argument("--T", default=100, type=int)
+    parser.add_argument("--epochs", default=20, type=int)
+    parser.add_argument("--number-of-clauses", default=2000, type=int)
+    parser.add_argument("--T", default=3125, type=int)
     parser.add_argument("--s", default=10.0, type=float)
     parser.add_argument("--number-of-state-bits", default=8, type=int)
-    parser.add_argument("--depth", default=2, type=int)
+    parser.add_argument("--depth", default=10, type=int)
     parser.add_argument("--hypervector-size", default=8, type=int)
     parser.add_argument("--hypervector-bits", default=2, type=int)
-    parser.add_argument("--message-size", default=256, type=int)
+    parser.add_argument("--message-size", default=2048, type=int)
     parser.add_argument("--message-bits", default=2, type=int)
     parser.add_argument(
         "--double-hashing", dest="double_hashing", default=False, action="store_true"
@@ -321,7 +321,7 @@ def draw_simple_graph(gt, graph_id, filename="plotgraph.png"):
     plt.show()
 
 
-draw_simple_graph(graphs_train, 0)
+# draw_simple_graph(graphs_train, 0)
 
 def printing_stuff(tm):
     weights = tm.get_state()[1].reshape(tm.number_of_outputs, tm.number_of_clauses)
@@ -392,41 +392,41 @@ def printing_stuff(tm):
         # fig.savefig(f"figs/mnist_test_{pred}.png")
     plt.show()
 
-# tm = MultiClassGraphTsetlinMachine(
-#     args.number_of_clauses,
-#     args.T,
-#     args.s,
-#     number_of_state_bits=args.number_of_state_bits,
-#     depth=args.depth,
-#     message_size=args.message_size,
-#     message_bits=args.message_bits,
-#     # max_included_literals=args.max_included_literals,
-#     double_hashing=args.double_hashing,
-# )
-#
-# for i in range(args.epochs):
-#     start_training = time()
-#     breakpoint()
-#     tm.fit(graphs_train, Y_train, epochs=1, incremental=True)
-#     stop_training = time()
-#
-#     start_testing = time()
-#     result_test = 100 * (tm.predict(graphs_test) == Y_test).mean()
-#     stop_testing = time()
-#
-#     result_train = 100 * (tm.predict(graphs_train) == Y_train).mean()
-#
-#     print(
-#         "%d %.2f %.2f %.2f %.2f"
-#         % (
-#             i,
-#             result_train,
-#             result_test,
-#             stop_training - start_training,
-#             stop_testing - start_testing,
-#         )
-#     )
-#
+tm = MultiClassGraphTsetlinMachine(
+    args.number_of_clauses,
+    args.T,
+    args.s,
+    number_of_state_bits=args.number_of_state_bits,
+    depth=args.depth,
+    message_size=args.message_size,
+    message_bits=args.message_bits,
+    # max_included_literals=args.max_included_literals,
+    double_hashing=args.double_hashing,
+)
+
+for i in range(args.epochs):
+    start_training = time()
+    # breakpoint()
+    tm.fit(graphs_train, Y_train, epochs=1, incremental=True)
+    stop_training = time()
+
+    start_testing = time()
+    result_test = 100 * (tm.predict(graphs_test) == Y_test).mean()
+    stop_testing = time()
+
+    result_train = 100 * (tm.predict(graphs_train) == Y_train).mean()
+
+    print(
+        "%d %.2f %.2f %.2f %.2f"
+        % (
+            i,
+            result_train,
+            result_test,
+            stop_training - start_training,
+            stop_testing - start_testing,
+        )
+    )
+
 
 # def scale(X, x_min, x_max):
 #     nom = (X - X.min()) * (x_max - x_min)
