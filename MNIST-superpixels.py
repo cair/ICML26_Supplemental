@@ -10,6 +10,7 @@ import os
 import pickle
 from sklearn.metrics import confusion_matrix
 import pywt
+from tqdm import tqdm
 
 from matplotlib import colors
 import matplotlib.pyplot as plt
@@ -22,21 +23,21 @@ from seaborn.palettes import color_palette
 def default_args(**kwargs):
     parser = argparse.ArgumentParser()
     parser.add_argument("--epochs", default=1, type=int)
-    parser.add_argument("--number-of-clauses", default=1000, type=int)
-    parser.add_argument("--T", default=1000, type=int)
-    parser.add_argument("--s", default=2, type=float)
+    parser.add_argument("--number-of-clauses", default=2500, type=int)
+    parser.add_argument("--T", default=3125, type=int)
+    parser.add_argument("--s", default=10, type=float)
     parser.add_argument("--number-of-state-bits", default=8, type=int)
     parser.add_argument("--depth", default=2, type=int)
-    parser.add_argument("--hypervector-size", default=128, type=int)
+    parser.add_argument("--hypervector-size", default=1024, type=int)
     parser.add_argument("--hypervector-bits", default=2, type=int)
-    parser.add_argument("--message-size", default=256, type=int)
+    parser.add_argument("--message-size", default=2048, type=int)
     parser.add_argument("--message-bits", default=2, type=int)
     parser.add_argument(
         "--double-hashing", dest="double_hashing", default=True, action="store_true"
     )
     parser.add_argument("--max-included-literals", default=32, type=int)
     parser.add_argument("--output-file", default="optuna_results_dec.csv", type=str)
-    parser.add_argument("--resolution-wavelet", default=10, type=int)
+    parser.add_argument("--resolution-wavelet", default=0, type=int)
     parser.add_argument("--resolution", default=8, type=int)
     parser.add_argument(
         "--gpu", default=1, type=int, help="GPU device to use (default: 0)"
@@ -53,8 +54,12 @@ args = default_args()
 train_dataset = MNISTSuperpixels(root="data/MNISTSuperpixels", train=True)
 test_dataset = MNISTSuperpixels(root="data/MNISTSuperpixels", train=False)
 
-train_dataset = train_dataset[:100]  # Use a subset for testing
-test_dataset = test_dataset[:100]
+# train_dataset = train_dataset[:100]  # Use a subset for testing
+# test_dataset = test_dataset[:100]
+
+
+train_dataset = train_dataset  # Use a subset for testing
+test_dataset = test_dataset
 
 # slight increase:
 blurRowandCol = True
@@ -113,17 +118,19 @@ symbols.extend(f"AvgDistance{i}" for i in range(100))  # Average distance levels
 symbols.extend(f"LayerPos{i}" for i in range(100))  # Global positional indicators
 
 new_nodes = 10
+new_nodes = 0
 
 
 def create_graphs_with_second_layer(
-    dataset, new_nodes, distance_groups, resolution_wavelet
+    dataset, new_nodes, distance_groups, resolution_wavelet, init_with=None,
 ):
     graphs = Graphs(
         len(dataset),
         symbols=symbols,
         hypervector_size=args.hypervector_size,
         hypervector_bits=args.hypervector_bits,
-        double_hashing=args.double_hashing,
+        # double_hashing=args.double_hashing,
+        init_with=init_with,
     )
 
     for graph_id, data in enumerate(dataset):
@@ -133,7 +140,7 @@ def create_graphs_with_second_layer(
 
     graphs.prepare_node_configuration()
 
-    for graph_id, data in enumerate(dataset):
+    for graph_id, data in tqdm(enumerate(dataset)):
         num_nodes = data.num_nodes
         total_nodes = num_nodes + (new_nodes if new_nodes > 0 else 0)
         edge_counts = np.zeros(total_nodes, dtype=np.uint32)
@@ -460,11 +467,6 @@ def objective(trial):
 
     return accuracy
 
-def plot_superpixels(graph, graph_id, img):
-    fig, ax = plt.subplots(1, 1)
-    ax.imshow(img)
-
-    plt.show()
 
 def draw_simple_graph(gt, graph_id):
     # colorslist = cm.rainbow(np.linspace(0, 1, len(gt.edge_type_id)))
@@ -526,6 +528,17 @@ def draw_simple_graph(gt, graph_id):
     # plt.savefig(filename, dpi=300, bbox_inches='tight')
     plt.show()
 
+
+
+# def plot_superpixels(graph: Graphs, graph_id, img):
+#     fig, ax = plt.subplots(1, 1)
+#     ax.imshow(img)
+#
+#
+#     breakpoint()
+#
+#     plt.show()
+
 if __name__ == "__main__":
     # Initialize results file
     # if not os.path.exists(args.output_file):
@@ -544,35 +557,60 @@ if __name__ == "__main__":
     resolution_wavelet = args.resolution_wavelet
     distance_groups = 9  # best value from Optuna
     new_nodes = 14  # best value from Optuna
-    graphs_train = create_graphs_with_second_layer(
+    graphs_train: Graphs = create_graphs_with_second_layer(
         train_dataset, new_nodes, distance_groups, resolution_wavelet
     )
-    draw_simple_graph(graphs_train, 0)
-    # graphs_test = create_graphs_with_second_layer(
-    #     test_dataset, new_nodes, distance_groups, resolution_wavelet
-    # )
-    # tm = MultiClassGraphTsetlinMachine(
-    #     args.number_of_clauses,
-    #     T=args.T,
-    #     s=args.s,
-    #     number_of_state_bits=args.number_of_state_bits,
-    #     depth=args.depth,
-    #     message_size=args.message_size,
-    #     message_bits=args.message_bits,
-    #     max_included_literals=args.max_included_literals,
-    #     double_hashing=args.double_hashing,
-    # )
-    # for epoch in range(args.epochs):
-    #     start_training = time()
-    #     tm.fit(graphs_train, Y_train, epochs=1, incremental=True)
-    #     stop_training = time()
+    # draw_simple_graph(graphs_train, 0)
+    graphs_test: Graphs = create_graphs_with_second_layer(
+        test_dataset, new_nodes, distance_groups, resolution_wavelet, init_with=graphs_train,
+    )
+    tm = MultiClassGraphTsetlinMachine(
+        args.number_of_clauses,
+        T=args.T,
+        s=args.s,
+        number_of_state_bits=args.number_of_state_bits,
+        depth=args.depth,
+        message_size=args.message_size,
+        message_bits=args.message_bits,
+        # max_included_literals=args.max_included_literals,
+    )
+    for epoch in range(args.epochs):
+        start_training = time()
+        tm.fit(graphs_train, Y_train, epochs=1, incremental=True)
+        stop_training = time()
+
+        start_testing = time()
+        result_test = 100 * (tm.predict(graphs_test) == Y_test).mean()
+        stop_testing = time()
+
+        result_train = 100 * (tm.predict(graphs_train) == Y_train).mean()
+
+        # Get predictions
+        predicted_test = tm.predict(graphs_test)
+        result_test = 100 * (predicted_test == Y_test).mean()
+
+
+    # ind = 0
+    # clause_outputs, cs = tm.transform_nodewise(graphs_test)
+    # weights = tm.get_state()[1].reshape(tm.number_of_outputs, tm.number_of_clauses)
     #
-    #     start_testing = time()
-    #     result_test = 100 * (tm.predict(graphs_test) == Y_test).mean()
-    #     stop_testing = time()
+    # print(f'{graphs_test.hypervector_size=}')
+    # print(f'{graphs_test.hypervectors=}')
+    # print(f'{graphs_test.hypervectors.max()=}')
+    # print(f'{graphs_test.hypervectors.min()=}')
+
+
+    # clause_literals = tm.get_clause_literals(graphs_test.hypervectors)
+    # num_symbols = len(graphs_test.symbol_id)
+    # pred = np.argmax(clause_outputs[ind])
+    # breakpoint()
     #
-    #     result_train = 100 * (tm.predict(graphs_train) == Y_train).mean()
+    # for c in tqdm(range(tm.number_of_clauses)):
+    #     w = weights[pred, c]
     #
-    #     # Get predictions
-    #     predicted_test = tm.predict(graphs_test)
-    #     result_test = 100 * (predicted_test == Y_test).mean()
+    #     if w < 0:
+    #         continue
+
+
+
+
