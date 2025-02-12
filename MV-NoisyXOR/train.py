@@ -88,18 +88,18 @@ def train(tm, graphs_train, Y_train, graphs_test, Y_test, epochs):
 
 if __name__ == "__main__":
     epochs = 50
-    noises = [0.05, 0.1, 0.2]
+    noises = [0.01, 0.05, 0.1, 0.2]
     num_values = [50, 100, 200, 400, 800]
 
     tm_params = {
         "number_of_clauses": 1000,
         "T": 2000,
-        "s": 2.2,
+        "s": 1,
         "message_size": 2048,
         "message_bits": 2,
         "double_hashing": True,
         "depth": 2,
-        "grid": (16 * 13 * 4, 1, 1),
+        "grid": (16 * 13, 1, 1),
         "block": (128, 1, 1),
     }
 
@@ -114,7 +114,7 @@ if __name__ == "__main__":
             print("Generating data...")
             symbols = [i for i in range(num_value)]
             graph_params = {
-                "number_of_graphs": 60000,
+                "number_of_graphs": 50000,
                 "hypervector_size": 2048,
                 "hypervector_bits": 2,
                 "double_hashing": True,
@@ -126,9 +126,9 @@ if __name__ == "__main__":
 
             graphs_test, X_test, Y_test = generate_graphs(
                 symbols,
-                noise,
+                0.0,
                 {
-                    "number_of_graphs": 10000,
+                    "number_of_graphs": 2000,
                     "init_with": graphs_train,
                 },
             )
