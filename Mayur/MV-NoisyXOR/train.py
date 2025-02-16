@@ -87,6 +87,7 @@ def train(tm, graphs_train, Y_train, graphs_test, Y_test, epochs):
 
 
 if __name__ == "__main__":
+    dir = "./Mayur/MV-NoisyXOR/results"
     epochs = 50
     noises = [0.01, 0.05, 0.1, 0.2]
     num_values = [50, 100, 200, 400, 800]
@@ -142,10 +143,10 @@ if __name__ == "__main__":
 
             df = pd.DataFrame(trial_history).T
             df.to_csv(
-                f"./MV-NoisyXOR/results/noisy_xor_{num_value}_{noise}.csv", index=False
+                f"{dir}/noisy_xor_{num_value}_{noise}.csv", index=False
             )
             print(
-                f"Results saved to ./MV-NoisyXOR/results/noisy_xor_{num_value}_{noise}.csv"
+                f"Results saved to {dir}/noisy_xor_{num_value}_{noise}.csv"
             )
 
             best = df.max(axis=1).min(axis=0)
@@ -156,4 +157,4 @@ if __name__ == "__main__":
 
     fig, ax = plt.subplots(layout="compressed")
     sns.heatmap(bests, annot=True, cbar=True, ax=ax)
-    fig.savefig("./MV-NoisyXOR/results/heatmap.png")
+    fig.savefig(f"{dir}/results/heatmap.png")
