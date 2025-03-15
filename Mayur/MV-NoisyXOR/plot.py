@@ -1,8 +1,9 @@
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import seaborn as sns
 
+plt.style.use("seaborn-v0_8")
 if __name__ == "__main__":
     dir = "./Mayur/MV-NoisyXOR/results"
     noises = [0.01, 0.05, 0.1, 0.2]
@@ -16,6 +17,7 @@ if __name__ == "__main__":
         figsize=(15, 10),
         sharex=True,
         sharey=True,
+        layout="tight",
     )
     fig.suptitle("Noisy MultivalueXOR")
     fig.supxlabel("Number of values")
@@ -31,13 +33,13 @@ if __name__ == "__main__":
 
             bests[i, j] = best
 
-    handles, labels = axs[0, 0].get_legend_handles_labels()
-    fig.legend(
-        handles,
-        labels,
-        title="Trial",
-        loc="center right",
-    )
+    # handles, labels = axs[0, 0].get_legend_handles_labels()
+    # fig.legend(
+    #     handles,
+    #     labels,
+    #     title="Trial",
+    #     loc="center right",
+    # )
 
     for ax in axs.ravel():
         ax.get_legend().remove()
@@ -54,7 +56,7 @@ if __name__ == "__main__":
     ax_heat.invert_yaxis()
     ax_heat.set_xlabel("Number of values")
     ax_heat.set_ylabel("Percentage of Noise")
-    ax_heat.set_title("Heatmap of Noise vs Number of values")
+    ax_heat.set_title("Accuracy (MultiValue NoisyXOR)")
 
-    fig_heat.savefig(f"{dir}/heatmap.png")
-    fig.savefig(f"{dir}/line-plot.png")
+    fig_heat.savefig(f"{dir}/heatmap.png", bbox_inches="tight", dpi=300)
+    fig.savefig(f"{dir}/line-plot.png", bbox_inches="tight", dpi=300)
