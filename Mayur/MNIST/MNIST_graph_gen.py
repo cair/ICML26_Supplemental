@@ -1,0 +1,96 @@
+import pickle
+from lzma import LZMAFile
+
+import numpy as np
+from GraphTsetlinMachine.graphs import Graphs
+from keras.api.datasets import mnist
+from skimage.util import view_as_windows
+from tqdm import tqdm
+
+
+def generate_graphs(X, graph_args, patch_size):
+    graphs = Graphs(**graph_args)
+
+    num_graphs = X.shape[0]
+    dim = X.shape[1]
+    num_nodes = dim * dim
+
+    for id in range(num_graphs):
+        graphs.set_number_of_graph_nodes(id, num_nodes)
+
+    graphs.prepare_node_configuration()
+
+    for graph_id in tqdm(range(X.shape[0]), desc="Adding graph nodes", leave=False):
+        for node_id in range(graphs.number_of_graph_nodes[graph_id]):
+            graphs.add_graph_node(graph_id, node_id, 0)
+
+    graphs.prepare_edge_configuration()
+
+    for graph_id in tqdm(range(X.shape[0]), desc="Adding node symbols", leave=False):
+        windows = view_as_windows(X[graph_id, :, :], (patch_size, patch_size))
+        for q in range(windows.shape[0]):
+            for r in range(windows.shape[1]):
+                node_id = q * dim + r
+
+                patch = windows[q, r].reshape(-1).astype(np.uint32)
+                for k in patch.nonzero()[0]:
+                    graphs.add_graph_node_property(graph_id, node_id, k)
+
+                graphs.add_graph_node_property(graph_id, node_id, "C:%d" % (q))
+                graphs.add_graph_node_property(graph_id, node_id, "R:%d" % (r))
+
+    graphs.encode()
+
+    return graphs
+
+
+if __name__ == "__main__":
+    (x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+    x_train = np.where(x_train > 75, 1, 0)
+    x_test = np.where(x_test > 75, 1, 0)
+    y_train = y_train.astype(np.uint32)
+    y_test = y_test.astype(np.uint32)
+
+    symbols = []
+    patch_size = 10
+
+    # Column and row symbols
+    for i in range(28 - patch_size + 1):
+        symbols.append("C:%d" % (i))
+        symbols.append("R:%d" % (i))
+
+    # Patch pixel symbols
+    for i in range(patch_size * patch_size):
+        symbols.append(i)
+
+    graphs_train = generate_graphs(
+        x_train,
+        dict(
+            number_of_graphs=x_train.shape[0],
+            symbols=symbols,
+            hypervector_size=128,
+            hypervector_bits=2,
+            double_hashing=False,
+        ),
+        patch_size,
+    )
+
+    graphs_test = generate_graphs(
+        x_test,
+        dict(
+            number_of_graphs=x_test.shape[0],
+            init_with=graphs_train,
+        ),
+        patch_size,
+    )
+
+    print("Graphs generated")
+
+    with LZMAFile("./MNIST/graphs_train.tar.xz", "wb") as f:
+        pickle.dump({"graph": graphs_train, "y": y_train}, f)
+
+    with LZMAFile("./MNIST/graphs_test.tar.xz", "wb") as f:
+        pickle.dump({"graph": graphs_test, "y": y_test}, f)
+
+    print("Graphs saved to ./MNIST/graphs_train.tar.xz and ./MNIST/graphs_test.tar.xz")
