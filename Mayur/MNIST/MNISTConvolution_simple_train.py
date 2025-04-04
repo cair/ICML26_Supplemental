@@ -45,10 +45,10 @@ def generate_graphs(X, graph_args):
     for graph_id in tqdm(
         range(X_train.shape[0]), desc="Adding graph nodes", leave=False
     ):
-        for node_id in range(graphs_train.number_of_graph_nodes[graph_id]):
-            graphs_train.add_graph_node(graph_id, node_id, 0)
+        for node_id in range(graphs.number_of_graph_nodes[graph_id]):
+            graphs.add_graph_node(graph_id, node_id, 0)
 
-    graphs_train.prepare_edge_configuration()
+    graphs.prepare_edge_configuration()
 
     for graph_id in tqdm(
         range(X_train.shape[0]), desc="Adding node symbols", leave=False
@@ -60,10 +60,10 @@ def generate_graphs(X, graph_args):
 
                 patch = windows[q, r].reshape(-1).astype(np.uint32)
                 for k in patch.nonzero()[0]:
-                    graphs_train.add_graph_node_property(graph_id, node_id, k)
+                    graphs.add_graph_node_property(graph_id, node_id, k)
 
-                graphs_train.add_graph_node_property(graph_id, node_id, "C:%d" % (q))
-                graphs_train.add_graph_node_property(graph_id, node_id, "R:%d" % (r))
+                graphs.add_graph_node_property(graph_id, node_id, "C:%d" % (q))
+                graphs.add_graph_node_property(graph_id, node_id, "R:%d" % (r))
 
     graphs.encode()
 
@@ -107,7 +107,7 @@ if __name__ == "__main__":
             symbols=symbols,
             hypervector_size=args.hypervector_size,
             hypervector_bits=args.hypervector_bits,
-            double_hashing=args.double_hashing,
+            double_hashing=False,
         ),
     )
 
