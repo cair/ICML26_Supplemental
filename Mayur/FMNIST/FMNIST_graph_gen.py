@@ -59,7 +59,7 @@ if __name__ == "__main__":
     y_test = y_test.astype(np.uint32)
 
     symbols = []
-    patch_size = 10
+    patch_size = 3
 
     # Column and row symbols
     for i in range(28 - patch_size + 1):
@@ -75,9 +75,9 @@ if __name__ == "__main__":
         dict(
             number_of_graphs=x_train_org.shape[0],
             symbols=symbols,
-            hypervector_size=128,
+            hypervector_size=256,
             hypervector_bits=2,
-            double_hashing=False,
+            double_hashing=True,
         ),
         patch_size,
     )

@@ -19,9 +19,9 @@ if __name__ == "__main__":
     graphs_test: Graphs = dtest["graph"]
     y_test = dtest["y"]
 
-    tm = MultiClassGraphTsetlinMachine(40000, 10000, 15, depth=1)
+    tm = MultiClassGraphTsetlinMachine(40000, 15000, 10, depth=1)
 
-    for i in range(30):
+    for i in range(50):
         start_training = time()
         tm.fit(graphs_train, y_train, epochs=1, incremental=True)
         stop_training = time()
@@ -38,5 +38,5 @@ if __name__ == "__main__":
 
     state_dict = tm.save()
 
-    with LZMAFile("./FMNIST/mnist_model.tm", "wb") as f:
+    with LZMAFile("./FMNIST/fmnist_model.tm", "wb") as f:
         pickle.dump(state_dict, f)
