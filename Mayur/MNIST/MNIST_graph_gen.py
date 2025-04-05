@@ -12,7 +12,7 @@ def generate_graphs(X, graph_args, patch_size):
     graphs = Graphs(**graph_args)
 
     num_graphs = X.shape[0]
-    dim = X.shape[1]
+    dim = X.shape[1] - patch_size + 1
     num_nodes = dim * dim
 
     for id in range(num_graphs):
@@ -27,17 +27,15 @@ def generate_graphs(X, graph_args, patch_size):
     graphs.prepare_edge_configuration()
 
     for graph_id in tqdm(range(X.shape[0]), desc="Adding node symbols", leave=False):
-        windows = view_as_windows(X[graph_id, :, :], (patch_size, patch_size))
-        for q in range(windows.shape[0]):
-            for r in range(windows.shape[1]):
-                node_id = q * dim + r
+        for node_id in range(num_nodes):
+            x, y = node_id // dim, node_id % dim
+            patch = X[graph_id, x : x + patch_size, y : y + patch_size].flatten()
 
-                patch = windows[q, r].reshape(-1).astype(np.uint32)
-                for k in patch.nonzero()[0]:
-                    graphs.add_graph_node_property(graph_id, node_id, k)
+            graphs.add_graph_node_property(graph_id, node_id, "R:%d" % (x))
+            graphs.add_graph_node_property(graph_id, node_id, "C:%d" % (y))
 
-                graphs.add_graph_node_property(graph_id, node_id, "C:%d" % (q))
-                graphs.add_graph_node_property(graph_id, node_id, "R:%d" % (r))
+            for p in patch.nonzero()[0]:
+                graphs.add_graph_node_property(graph_id, node_id, p)
 
     graphs.encode()
 
