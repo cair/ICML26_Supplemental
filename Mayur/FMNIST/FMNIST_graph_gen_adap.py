@@ -51,10 +51,10 @@ if __name__ == "__main__":
 
     # Quantize pixel values
     for i in range(x_train.shape[0]):
-        x_train[i,:] = cv2.adaptiveThreshold(x_train[i], 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+        x_train[i,:] = cv2.adaptiveThreshold(x_train_org[i], 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 0)
 
     for i in range(x_test.shape[0]):
-        x_test[i,:] = cv2.adaptiveThreshold(x_test[i], 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+        x_test[i,:] = cv2.adaptiveThreshold(x_test_org[i], 1, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 0)
 
     y_train = y_train.astype(np.uint32)
     y_test = y_test.astype(np.uint32)
