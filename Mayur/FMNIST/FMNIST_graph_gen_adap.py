@@ -76,9 +76,9 @@ if __name__ == "__main__":
         dict(
             number_of_graphs=x_train_org.shape[0],
             symbols=symbols,
-            hypervector_size=128,
+            hypervector_size=512,
             hypervector_bits=2,
-            double_hashing=False,
+            double_hashing=True,
         ),
         patch_size,
     )

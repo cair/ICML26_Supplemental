@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     tm = MultiClassGraphTsetlinMachine(40000, 15000, 10, depth=1)
 
-    for i in range(50):
+    for i in range(30):
         start_training = time()
         tm.fit(graphs_train, y_train, epochs=1, incremental=True)
         stop_training = time()
