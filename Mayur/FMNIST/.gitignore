@@ -1,2 +1,2 @@
-graphs_test.tar.lz 
-graphs_train.tar.lz
+graphs_test*.tar.lz 
+graphs_train*.tar.lz
