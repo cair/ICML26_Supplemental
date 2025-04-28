@@ -5,7 +5,7 @@ import seaborn as sns
 
 plt.style.use("seaborn-v0_8")
 if __name__ == "__main__":
-    dir = "./Mayur/MV-NoisyXOR/results"
+    dir = "./MV-NoisyXOR/results"
     noises = [0.01, 0.05, 0.1, 0.2]
     num_values = [50, 100, 200, 400, 800]
 
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     for ax in axs.ravel():
         ax.get_legend().remove()
 
-    fig_heat, ax_heat = plt.subplots(layout="compressed")
+    fig_heat, ax_heat = plt.subplots(figsize=(5, 4), layout="compressed", dpi=200)
     sns.heatmap(
         bests,
         annot=True,
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     ax_heat.invert_yaxis()
     ax_heat.set_xlabel("Number of values")
     ax_heat.set_ylabel("Percentage of Noise")
-    ax_heat.set_title("Accuracy (MultiValue NoisyXOR)")
+    # ax_heat.set_title("Accuracy (MultiValue NoisyXOR)")
 
-    fig_heat.savefig(f"{dir}/heatmap.png", bbox_inches="tight", dpi=300)
+    fig_heat.savefig(f"{dir}/MVXOR_heatmap.png", bbox_inches="tight", dpi=300)
     fig.savefig(f"{dir}/line-plot.png", bbox_inches="tight", dpi=300)
