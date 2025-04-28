@@ -4,7 +4,6 @@ from lzma import LZMAFile
 import numpy as np
 from GraphTsetlinMachine.graphs import Graphs
 from keras.api.datasets import mnist
-from skimage.util import view_as_windows
 from tqdm import tqdm
 
 
