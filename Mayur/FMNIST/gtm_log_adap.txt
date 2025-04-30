@@ -48,3 +48,36 @@ Epoch 46 | Train Acc: 94.2083, Test Acc: 88.3600 | Train Time: 40.04, Test Time:
 Epoch 47 | Train Acc: 94.2267, Test Acc: 88.2700 | Train Time: 40.08, Test Time: 6.10
 Epoch 48 | Train Acc: 94.2500, Test Acc: 88.2600 | Train Time: 40.07, Test Time: 6.10
 Epoch 49 | Train Acc: 94.1483, Test Acc: 88.2800 | Train Time: 40.06, Test Time: 6.10
+
+
+Epoch 0 | Train Acc: 86.4800, Test Acc: 85.3200 | Train Time: 284.54, Test Time: 44.99
+Epoch 1 | Train Acc: 87.9933, Test Acc: 86.2400 | Train Time: 280.18, Test Time: 45.10
+Epoch 2 | Train Acc: 88.7533, Test Acc: 86.8800 | Train Time: 279.76, Test Time: 45.09
+Epoch 3 | Train Acc: 89.3417, Test Acc: 87.3700 | Train Time: 279.32, Test Time: 45.09
+Epoch 4 | Train Acc: 89.7050, Test Acc: 87.6400 | Train Time: 279.03, Test Time: 45.09
+Epoch 5 | Train Acc: 90.0183, Test Acc: 87.7300 | Train Time: 278.84, Test Time: 45.10
+Epoch 6 | Train Acc: 90.3517, Test Acc: 87.7800 | Train Time: 278.71, Test Time: 45.17
+Epoch 7 | Train Acc: 90.5750, Test Acc: 88.1600 | Train Time: 278.55, Test Time: 45.11
+Epoch 8 | Train Acc: 90.7633, Test Acc: 88.1000 | Train Time: 278.04, Test Time: 44.99
+Epoch 9 | Train Acc: 90.9517, Test Acc: 88.2400 | Train Time: 277.96, Test Time: 45.01
+Epoch 10 | Train Acc: 91.1367, Test Acc: 88.2700 | Train Time: 277.82, Test Time: 45.00
+Epoch 11 | Train Acc: 91.3850, Test Acc: 88.3800 | Train Time: 277.75, Test Time: 45.01
+Epoch 12 | Train Acc: 91.6300, Test Acc: 88.4000 | Train Time: 277.59, Test Time: 45.03
+Epoch 13 | Train Acc: 91.8050, Test Acc: 88.4700 | Train Time: 277.57, Test Time: 45.01
+Epoch 14 | Train Acc: 91.9267, Test Acc: 88.7100 | Train Time: 277.50, Test Time: 45.01
+Epoch 15 | Train Acc: 92.1483, Test Acc: 88.4600 | Train Time: 277.40, Test Time: 45.01
+Epoch 16 | Train Acc: 92.0983, Test Acc: 88.2400 | Train Time: 277.42, Test Time: 45.00
+Epoch 17 | Train Acc: 92.3867, Test Acc: 88.5800 | Train Time: 277.34, Test Time: 45.01
+Epoch 18 | Train Acc: 92.4133, Test Acc: 88.3900 | Train Time: 277.32, Test Time: 45.01
+Epoch 19 | Train Acc: 92.4617, Test Acc: 88.4500 | Train Time: 277.28, Test Time: 45.00
+Epoch 20 | Train Acc: 92.5300, Test Acc: 88.6500 | Train Time: 277.25, Test Time: 44.99
+Epoch 21 | Train Acc: 92.7533, Test Acc: 88.5700 | Train Time: 277.20, Test Time: 45.01
+Epoch 22 | Train Acc: 92.9000, Test Acc: 88.4500 | Train Time: 277.16, Test Time: 45.00
+Epoch 23 | Train Acc: 92.9400, Test Acc: 88.5000 | Train Time: 277.12, Test Time: 45.01
+Epoch 24 | Train Acc: 92.9667, Test Acc: 88.6600 | Train Time: 277.09, Test Time: 45.00
+Epoch 25 | Train Acc: 93.1967, Test Acc: 88.6900 | Train Time: 276.96, Test Time: 45.00
+Epoch 26 | Train Acc: 93.2150, Test Acc: 88.4200 | Train Time: 277.02, Test Time: 45.00
+Epoch 27 | Train Acc: 93.3000, Test Acc: 88.5100 | Train Time: 276.97, Test Time: 45.02
+Epoch 28 | Train Acc: 93.4433, Test Acc: 88.5900 | Train Time: 276.94, Test Time: 45.01
+Epoch 29 | Train Acc: 93.5533, Test Acc: 88.7700 | Train Time: 276.94, Test Time: 45.01
+
