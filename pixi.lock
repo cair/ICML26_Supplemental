@@ -561,6 +561,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/ee/1b/00a78aa2e8fbd63f9af08c9c19e6deb3d5d66b4dda677a0f61654680ee89/flatbuffers-25.9.23-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a3/61/8001b38461d751cd1a0c3a6ae84346796a5758123f3ed97a1b121dfbf4f3/gast-0.6.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a3/de/c648ef6835192e6e2cc03f40b19eeda4382c49b5bafb43d88b931c4c74ac/google_pasta-0.2.0-py3-none-any.whl
+      - pypi: git+https://github.com/cair/GraphTsetlinMachine.git#7c3ea27a3632d5b2967a52fb953ac28e3d052bb7
       - pypi: https://files.pythonhosted.org/packages/3f/42/5f628abe360b84dfe8dd8f32be6b0606dc31dc04d3358eef27db791ea4d5/grpcio-1.75.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/8b/23/4ab1108e87851ccc69694b03b817d92e142966a6c4abd99e17db77f2c066/h5py-3.15.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/94/5b/4c778cc921ce4b864b238f63f8e3ff6e954ab19b80c9fa680593ad8093d4/keras-3.11.3-py3-none-any.whl
@@ -2675,9 +2676,12 @@ packages:
 - pypi: ./
   name: graphtm-exp
   version: 0.1.0
-  sha256: 9e5f9f9d8500b1849ffef7fb3cad1c70090a55c86940cf9a6f6774398565eb14
+  sha256: 9d7f8eab083ad7eed29fc36320c75f6fca3d0c50a05b4d51cd9e13f840d652ba
   requires_python: '>=3.11'
   editable: true
+- pypi: git+https://github.com/cair/GraphTsetlinMachine.git#7c3ea27a3632d5b2967a52fb953ac28e3d052bb7
+  name: graphtsetlinmachine
+  version: 0.3.4
 - pypi: https://files.pythonhosted.org/packages/3f/42/5f628abe360b84dfe8dd8f32be6b0606dc31dc04d3358eef27db791ea4d5/grpcio-1.75.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
   name: grpcio
   version: 1.75.1

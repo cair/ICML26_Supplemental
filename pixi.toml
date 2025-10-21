@@ -37,3 +37,4 @@ graphtm_exp = { path = ".", editable = true }
 pycuda = ">=2025.1.2, <2026"
 tensorflow = ">=2.20.0, <3"
 tmu = ">=0.8.3, <0.9"
+graphtsetlinmachine = { git = "https://github.com/cair/GraphTsetlinMachine.git" }
