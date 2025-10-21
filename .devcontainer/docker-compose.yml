@@ -1,0 +1,23 @@
+vices:
+  dev:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+      args:
+        UID: ${UID}
+        GID: ${GID}
+        UNAME: ${UNAME}
+    image: td
+    network_mode: host
+    environment:
+      TERM: ${TERM}
+      DISPLAY: ${DISPLAY}
+    volumes:
+      - ../:/workspace
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
