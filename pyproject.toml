@@ -1,2 +1,25 @@
+[project]
+authors = [{name = "Arthur Morgan", email = "email@am.pm"}]
+dependencies = []
+name = "GraphTM-exp"
+requires-python = ">=3.11"
+version = "0.1.0"
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+
 [tool.basedpyright]
 typeCheckingMode = "standard"
+reportUnusedImport = false
+reportMissingTypeStubs = "hint"
+exclude = [
+    "**/__pycache__*",
+    "**/.*",
+    "**/data*",
+]
+
+[tool.ruff]
+line-length = 120
+
