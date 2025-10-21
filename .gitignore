@@ -1,3 +1,4 @@
+.devcontainer/.env
 .envrc
 data
 .*DS_Store
