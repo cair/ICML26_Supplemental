@@ -90,7 +90,7 @@ dim = (X_train.shape[1], X_train.shape[2], 3 * resolution)
 X_train = X_train.reshape(X_train.shape[0], -1)
 X_test = X_test.reshape(X_test.shape[0], -1)
 
-f = open("./CIFAR10/cifar10_%.1f_%d_%d_%d.txt" % (s, clauses, T, patch_size), "w+")
+f = open("./CIFAR10/dev_cifar10_%.1f_%d_%d_%d.txt" % (s, clauses, T, patch_size), "w+")
 
 
 tm = MultiClassConvolutionalTsetlinMachine2D(
@@ -99,6 +99,8 @@ tm = MultiClassConvolutionalTsetlinMachine2D(
     s,
     dim,
     (patch_size, patch_size),
+    grid=(16*13*4, 1, 1),
+    block=(128, 1, 1)
 )
 
 for i in range(epochs):
