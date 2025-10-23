@@ -1,4 +1,4 @@
-vices:
+services:
   dev:
     build:
       context: ..

@@ -31,6 +31,8 @@ bottleneck = ">=1.6.0,<2"
 kagglehub = ">=0.3.8,<0.4"
 datasets = ">=4.2.0,<5"
 py-opencv = ">=4.12.0,<5"
+rdkit = ">=2025.9.1,<2026"
+cairosvg = ">=2.8.2,<3"
 
 [pypi-dependencies]
 graphtm_exp = { path = ".", editable = true }
@@ -38,3 +40,4 @@ pycuda = ">=2025.1.2, <2026"
 tensorflow = ">=2.20.0, <3"
 tmu = ">=0.8.3, <0.9"
 graphtsetlinmachine = { git = "https://github.com/cair/GraphTsetlinMachine.git" }
+pharmacophore-toolkit = "*"
