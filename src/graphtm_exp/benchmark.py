@@ -1,11 +1,11 @@
-from GraphTsetlinMachine.tm import MultiClassGraphTsetlinMachine
 import numpy as np
+from GraphTsetlinMachine.tm import MultiClassGraphTsetlinMachine
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from sklearn.model_selection import train_test_split
+from tqdm import tqdm
 
 from graphtm_exp.graph import Graphs
-from sklearn.model_selection import train_test_split
-
-from sklearn.metrics import precision_recall_fscore_support, accuracy_score
-from tqdm import tqdm
+from .Timer import Timer
 
 
 class Benchmark:
@@ -60,12 +60,15 @@ class Benchmark:
     ):
         history = {}
         for epoch in (pbar := tqdm(range(self.epochs), desc="GTM Fit", leave=False, dynamic_ncols=True)):
-            tm.fit(graphs_train, y_train, epochs=1, incremental=True)
+            with Timer() as fit_timer:
+                tm.fit(graphs_train, y_train, epochs=1, incremental=True)
 
-            y_val_pred = tm.predict(graphs_val)
+            with Timer() as pred_timer:
+                y_val_pred = tm.predict(graphs_val)
+
             metrics = self.metrics(y_val, y_val_pred)
+            metrics = {**metrics, "fit_time": fit_timer.elapsed(), "pred_time": pred_timer.elapsed()}
             history[epoch] = metrics
-
             pbar.set_postfix_str(f"Acc: {metrics['accuracy']:.4f}")
 
         return history
@@ -75,6 +78,8 @@ class Benchmark:
         pass
 
     def create_splits(self):
+        # TODO: Create splits: Should return indices for each split
+        # Maybe this can be done in __init__?
         pass
 
     def run(self):
