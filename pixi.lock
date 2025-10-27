@@ -71,6 +71,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/cffi-2.0.0-py311h5b438cf_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/charls-2.4.2-h59595ed_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/charset-normalizer-3.4.4-pyhd8ed1ab_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/chembl_structure_pipeline-1.2.2-pyh29332c3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/click-8.3.0-pyh707e725_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/comm-0.2.3-pyhe01879c_0.conda
@@ -1513,6 +1514,19 @@ packages:
   - pkg:pypi/charset-normalizer?source=hash-mapping
   size: 50965
   timestamp: 1760437331772
+- conda: https://conda.anaconda.org/conda-forge/noarch/chembl_structure_pipeline-1.2.2-pyh29332c3_0.conda
+  sha256: 5666c67ed58f3f60a14b93c7001010f09d146de6a8a0c163c5a4c76f9d177043
+  md5: 6038a0a803e97f3291512cf121a54d08
+  depends:
+  - python >=3.9
+  - rdkit >=2022.9.1
+  - python
+  license: MIT
+  license_family: MIT
+  purls:
+  - pkg:pypi/chembl-structure-pipeline?source=hash-mapping
+  size: 21941
+  timestamp: 1736190421739
 - conda: https://conda.anaconda.org/conda-forge/noarch/click-8.3.0-pyh707e725_0.conda
   sha256: c6567ebc27c4c071a353acaf93eb82bb6d9a6961e40692a359045a89a61d02c0
   md5: e76c4ba9e1837847679421b8d549b784
