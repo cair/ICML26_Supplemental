@@ -3,6 +3,7 @@ import numpy as np
 from GraphTsetlinMachine.tm import MultiClassGraphTsetlinMachine
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from sklearn.model_selection import train_test_split, StratifiedKFold
+from xgboost import XGBClassifier
 from tqdm import tqdm
 
 from graphtm_exp.graph import Graphs
@@ -19,6 +20,7 @@ class Benchmark:
         save_dir: str,
         name: str,
         gtm_args: dict,
+        xgb_args: dict,
         X_test: np.ndarray | None = None,
         Y_test: np.ndarray | None = None,
         graphs_test: Graphs | None = None,
@@ -29,6 +31,7 @@ class Benchmark:
         self.graphs = graphs
         self.save_dir = save_dir
         self.gtm_args = gtm_args
+        self.xgb_args = xgb_args
         self.epochs = epochs
 
         if X_test is not None:
@@ -56,7 +59,7 @@ class Benchmark:
 
         # Create file and write header in same order
         with open(self.fname, "w") as f:
-            f.write(f"Split,Epoch,fit_time,pred_time,metric_type,{','.join(self.met_order)}\n")
+            f.write(f"Model,Split,Epoch,fit_time,pred_time,metric_type,{','.join(self.met_order)}\n")
 
         # Create splits
         self.splits = self.create_splits()
@@ -112,7 +115,7 @@ class Benchmark:
             pbar.set_postfix_str(f"Acc: Train={metrics['train_accuracy']:.4f}, Val={metrics['val_accuracy']:.4f}")
 
             # Save metrics to file
-            row = f"{split_name},{epoch},{metrics['fit_time']},{metrics['pred_time']}"
+            row = f"GTM,{split_name},{epoch},{metrics['fit_time']},{metrics['pred_time']}"
             train_row = f"{row},train,{','.join(str(metrics[f'train_{k}']) for k in self.met_order)}"
             val_row = f"{row},val,{','.join(str(metrics[f'val_{k}']) for k in self.met_order)}"
             self.write_row(train_row)
@@ -121,9 +124,40 @@ class Benchmark:
         # Is history needed, when we write to file directly?
         return history
 
-    def fit_xgb(self):
-        pass
+    def fit_xgb(self, X_train, y_train, X_val, y_val, split_name: str) -> dict[int, dict]:
+        model = XGBClassifier(**self.xgb_args)
+        history: dict[int, dict] = {}
 
+        with (fit_timer := Timer()):
+            model.fit(X_train, y_train)
+
+        with (pred_timer := Timer()):
+            y_val_pred = model.predict(X_val)
+
+        y_train_pred = model.predict(X_train)
+
+        val_metrics = self.metrics(y_val, y_val_pred)
+        train_metrics = self.metrics(y_train, y_train_pred)
+        metrics = {
+            **{f"val_{k}": v for k, v in val_metrics.items()},
+            **{f"train_{k}": v for k, v in train_metrics.items()},
+            "fit_time": fit_timer.elapsed(),
+            "pred_time": pred_timer.elapsed(),
+        }
+        history[0] = metrics
+
+        # Save metrics to file
+        row = f"XGB,{split_name},0,{metrics['fit_time']},{metrics['pred_time']}"
+        train_row = f"{row},train,{','.join(str(metrics[f'train_{k}']) for k in self.met_order)}"
+        val_row = f"{row},val,{','.join(str(metrics[f'val_{k}']) for k in self.met_order)}"
+        self.write_row(train_row)
+        self.write_row(val_row)
+
+        return history
+
+    def fit_tm(self, X_train, y_train, X_val, y_val, split_name: str) -> dict[int, dict]:
+        # TM or CoTM???
+        return {0: {}}
 
     def write_row(self, row: str):
         with open(self.fname, "a") as f:
@@ -137,15 +171,27 @@ class Benchmark:
             y_train_split = self.Y_train[train_idx]
             graphs_val_split = self.graphs_train[val_idx]
             y_val_split = self.Y_train[val_idx]
+            x_train_split = self.X_train[train_idx]
+            x_val_split = self.X_train[val_idx]
+
+            # XGB
+            xgb_hist = self.fit_xgb(x_train_split, y_train_split, x_val_split, y_val_split, split_name)
+            print("XGB done.")
 
             # GTM
-            hist = self.fit_gtm( graphs_train_split, y_train_split, graphs_val_split, y_val_split, split_name)
+            gtm_hist = self.fit_gtm(graphs_train_split, y_train_split, graphs_val_split, y_val_split, split_name)
+            print("GTM done.")
 
         # Finally test set
         for rep in range(5):
             print(f"=============Final evaluation on test set ---- {rep}=============")
 
+            # XGB
+            hist = self.fit_xgb(self.X_train, self.Y_train, self.X_test, self.Y_test, f"test_{rep}")
+            print("XGB done.")
+
             # GTM
             hist = self.fit_gtm(self.graphs_train, self.Y_train, self.graphs_test, self.Y_test, f"test_{rep}")
+            print("GTM done.")
 
         print(f"We are done! Results saved to {self.fname}.")
