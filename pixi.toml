@@ -46,3 +46,4 @@ tensorflow = ">=2.20.0, <3"
 tmu = ">=0.8.3, <0.9"
 graphtsetlinmachine = { git = "https://github.com/cair/GraphTsetlinMachine.git" }
 pharmacophore-toolkit = "*"
+pysparsecoalescedtsetlinmachinecuda = { git = "https://github.com/cair/PySparseCoalescedTsetlinMachineCUDA.git" }
