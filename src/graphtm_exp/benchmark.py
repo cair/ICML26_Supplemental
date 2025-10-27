@@ -58,7 +58,7 @@ class Benchmark:
         """
         # Maybe this can be done in __init__?
 
-        self.kf = StratifiedKFold(n_splits=5, random_state=2)
+        self.kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=2)
         kf_splits = self.kf.split(np.zeros(self.Y_train.shape[0]), self.Y_train)
 
         splits = {}
@@ -81,7 +81,7 @@ class Benchmark:
         y_val: np.ndarray,
     ) -> dict[int, dict]:
         history: dict[int, dict] = {}
-        for epoch in (pbar := tqdm(range(self.epochs), desc="GTM Fit", leave=False, dynamic_ncols=True)):
+        for epoch in (pbar := tqdm(range(self.epochs), leave=False, dynamic_ncols=True)):
             with (fit_timer := Timer()):
                 tm.fit(graphs_train, y_train, epochs=1, incremental=True)
 
@@ -99,7 +99,7 @@ class Benchmark:
                 "pred_time": pred_timer.elapsed(),
             }
             history[epoch] = metrics
-            pbar.set_postfix_str(f"Acc: {metrics['accuracy']:.4f}")
+            pbar.set_postfix_str(f"Acc: Train={metrics['train_accuracy']:.4f}, Val={metrics['val_accuracy']:.4f}")
 
         return history
 
@@ -125,9 +125,10 @@ class Benchmark:
             self.save_results(hist)
 
         # Finally test set
-        print("=============Final evaluation on test set=============")
-        gtm = MultiClassGraphTsetlinMachine(**self.gtm_args)
-        hist = self.fit_gtm(gtm, self.graphs_train, self.Y_train, self.graphs_test, self.Y_test)
-        self.save_results(hist)
+        for rep in range(5):
+            print(f"=============Final evaluation on test set ---- {rep}=============")
+            gtm = MultiClassGraphTsetlinMachine(**self.gtm_args)
+            hist = self.fit_gtm(gtm, self.graphs_train, self.Y_train, self.graphs_test, self.Y_test)
+            self.save_results(hist)
 
         print(f"We are done! Results saved to {self.fname}.")
