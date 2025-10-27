@@ -1,4 +1,3 @@
-# TODO: TEST IF WORKS PROPERLY
 import numpy as np
 from GraphTsetlinMachine.graphs import Graphs as original_Graphs
 
@@ -75,10 +74,12 @@ class Graphs(original_Graphs):
                     old_edge_start : old_edge_start + old_edge_count
                 ]
 
+        subset.encode()
+
         return subset
 
     def __getitem__(self, index):
         indices = self._get_indices(index)
         if len(indices) == 0:
             raise ValueError("No graphs selected")
-        return None
+        return self._create_subset(indices)
