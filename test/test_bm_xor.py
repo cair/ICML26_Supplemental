@@ -1,10 +1,7 @@
 import numpy as np
-from GraphTsetlinMachine.tm import MultiClassGraphTsetlinMachine
-from tqdm import tqdm
 import random
 
 from graphtm_exp.graph import Graphs
-from graphtm_exp.timer import Timer
 from graphtm_exp.benchmark import Benchmark
 
 
@@ -100,6 +97,7 @@ if __name__ == "__main__":
         Y_train,
         graphs_train,
         save_dir,
+        name="mvxor",
         gtm_args=tm_params,
         X_test=X_test,
         Y_test=y_test,
