@@ -5,6 +5,7 @@ import random
 
 from graphtm_exp.graph import Graphs
 from graphtm_exp.timer import Timer
+from graphtm_exp.benchmark import Benchmark
 
 
 random.seed(42)
@@ -59,6 +60,29 @@ def generate_graphs(symbols, noise, graph_args: dict):
 
 
 if __name__ == "__main__":
+    noise = 0.05
+    num_value = 100
+    symbols = [i for i in range(num_value)]
+    graph_params = {
+        "number_of_graphs": 10000,
+        "hypervector_size": 2048,
+        "hypervector_bits": 2,
+        "double_hashing": True,
+        "symbols": symbols,
+    }
+
+    graphs_train, X_train, Y_train = generate_graphs(symbols, noise, graph_params)
+    graphs_test, X_test, y_test = generate_graphs(
+        symbols,
+        0.0,
+        {
+            "number_of_graphs": 1000,
+            "init_with": graphs_train,
+        },
+    )
+
+    save_dir = "./temp"
+
     tm_params = {
         "number_of_clauses": 1000,
         "T": 2000,
@@ -67,65 +91,19 @@ if __name__ == "__main__":
         "message_bits": 2,
         "double_hashing": True,
         "depth": 2,
-        "grid": (16 * 13, 1, 1),
-        "block": (128, 1, 1),
+        # "grid": (16 * 13, 1, 1),
+        # "block": (128, 1, 1),
     }
 
-    epochs = 10
-    noise = 0.1
-    num_value = 100
-    symbols = [i for i in range(num_value)]
-    graph_params = {
-        "number_of_graphs": 50000,
-        "hypervector_size": 2048,
-        "hypervector_bits": 2,
-        "double_hashing": True,
-        "symbols": symbols,
-    }
-    graphs_train, X_train, y_train = generate_graphs(symbols, noise, graph_params)
-
-    graphs_test, X_test, y_test = generate_graphs(
-        symbols,
-        0.0,
-        {
-            "number_of_graphs": 2000,
-            "init_with": graphs_train,
-        },
+    bm = Benchmark(
+        X_train,
+        Y_train,
+        graphs_train,
+        save_dir,
+        gtm_args=tm_params,
+        X_test=X_test,
+        Y_test=y_test,
+        graphs_test=graphs_test,
+        epochs=10,
     )
-
-    print("====================Training with graph splits====================")
-    tm = MultiClassGraphTsetlinMachine(**tm_params)
-    for i in range(epochs):
-        fit_time = 0.0
-        for b in tqdm(range(0, y_train.shape[0], 10000), desc="Training batches", dynamic_ncols=True, leave=False):
-            gsub = graphs_train[b : b + 10000]
-            ysub = y_train[b : b + 10000]
-            with (fit_timer := Timer()):
-                tm.fit(gsub, ysub, epochs=1, incremental=True)
-            fit_time += fit_timer.elapsed()
-
-        with (test_timer := Timer()):
-            pred_test = tm.predict(graphs_test)
-
-        result_test = 100 * (pred_test == y_test).mean()
-        result_train = 100 * (tm.predict(graphs_train) == y_train).mean()
-
-        print(
-            f"Epoch {i} | Train Acc: {result_train:.4f}, Test Acc: {result_test:.4f} | Train Time: {fit_time:.2f}, Test Time: {test_timer.elapsed():.2f}"
-        )
-
-    print("====================Training with original graphs====================")
-    tm2 = MultiClassGraphTsetlinMachine(**tm_params)
-    for i in range(epochs):
-        with (fit_timer := Timer()):
-            tm2.fit(graphs_train, y_train, epochs=1, incremental=True)
-
-        with (test_timer := Timer()):
-            pred_test = tm2.predict(graphs_test)
-
-        result_test = 100 * (pred_test == y_test).mean()
-        result_train = 100 * (tm2.predict(graphs_train) == y_train).mean()
-
-        print(
-            f"[Original Graphs] Epoch {i} | Train Acc: {result_train:.4f}, Test Acc: {result_test:.4f} | Train Time: {fit_timer.elapsed():.2f}, Test Time: {test_timer.elapsed():.2f}"
-        )
+    bm.run()
