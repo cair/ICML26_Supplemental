@@ -28,10 +28,20 @@ pixi shell
 
 To verify that you are using the correct environement, you can run `which python` and check if the path points to the something like `...folder/.pixi/envs/.../python`
 
+## Devcontainer
+Devcontainer configuration is provided for VSCode.
+
+## Running experiment
+...
+
 # TODO:
 - [x] Add pixi environement
 - [x] Add devcontainer
 - [ ] Benchmarks
-- [ ] Test environment
+    - [x] GTM
+    - [ ] TM
+    - [ ] XGBoost
+    - [ ] Memory and energy measurements
+- [x] Test environment
 - [ ] Test devcontainer
 - [ ] Add detailed instructions

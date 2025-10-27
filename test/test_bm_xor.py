@@ -1,10 +1,7 @@
 import numpy as np
-from GraphTsetlinMachine.tm import MultiClassGraphTsetlinMachine
-from tqdm import tqdm
 import random
 
 from graphtm_exp.graph import Graphs
-from graphtm_exp.timer import Timer
 from graphtm_exp.benchmark import Benchmark
 
 
@@ -83,7 +80,7 @@ if __name__ == "__main__":
 
     save_dir = "./temp"
 
-    tm_params = {
+    gtm_params = {
         "number_of_clauses": 1000,
         "T": 2000,
         "s": 1,
@@ -95,12 +92,16 @@ if __name__ == "__main__":
         # "block": (128, 1, 1),
     }
 
+    xgb_params = {}
+
     bm = Benchmark(
         X_train,
         Y_train,
         graphs_train,
         save_dir,
-        gtm_args=tm_params,
+        name="mvxor",
+        gtm_args=gtm_params,
+        xgb_args=xgb_params,
         X_test=X_test,
         Y_test=y_test,
         graphs_test=graphs_test,
