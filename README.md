@@ -39,9 +39,10 @@ Devcontainer configuration is provided for VSCode.
 - [x] Add devcontainer
 - [ ] Benchmarks
     - [x] GTM
-    - [ ] TM
-    - [ ] XGBoost
-    - [ ] Memory and energy measurements
+    - [x] TM
+    - [x] XGBoost
+    - [x] Memory and energy measurements
+    - [ ] Energy measurements
 - [x] Test environment
-- [ ] Test devcontainer
+- [x] Test devcontainer
 - [ ] Add detailed instructions
