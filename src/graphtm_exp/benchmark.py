@@ -1,16 +1,22 @@
 # WARN: INCOMPLETE
+import os
+from datetime import datetime
+
 import numpy as np
 from GraphTsetlinMachine.tm import MultiClassGraphTsetlinMachine
-from tmu.models.classification.vanilla_classifier import TMClassifier as VanillaTM
 from PySparseCoalescedTsetlinMachineCUDA.tm import MultiClassConvolutionalTsetlinMachine2D as CoTM
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-from sklearn.model_selection import train_test_split, StratifiedKFold
-from xgboost import XGBClassifier
+from sklearn.model_selection import StratifiedKFold, train_test_split
+from tmu.models.classification.vanilla_classifier import TMClassifier as VanillaTM
 from tqdm import tqdm
+from xgboost import XGBClassifier
 
 from graphtm_exp.graph import Graphs
-from .timer import Timer
-from datetime import datetime
+
+from .monitor import Monitor
+import logging
+
+logging.getLogger("tmu").setLevel(logging.WARNING)
 
 
 class Benchmark:
@@ -21,14 +27,16 @@ class Benchmark:
         graphs: Graphs,
         save_dir: str,
         name: str,
-        gtm_args: dict | None,
-        xgb_args: dict | None,
+        gtm_args: dict | None = None,
+        xgb_args: dict | None = None,
         vanilla_tm_args: dict | None = None,
         cotm_args: dict | None = None,
         X_test: np.ndarray | None = None,
         Y_test: np.ndarray | None = None,
         graphs_test: Graphs | None = None,
         epochs: int = 50,
+        gpu_polling_rate: float = 0.1,
+        num_test_reps: int = 5,
     ):
         """
         Benchmark
@@ -61,7 +69,17 @@ class Benchmark:
             Optional test graphs. If None, a split from graphs is used.
         epochs : int
             Number of epochs to train each model.
+        gpu_polling_rate : float
+            Polling rate for GPU memory monitoring.
+        num_test_reps : int
+            Number of repetitions for final test evaluation.
         """
+
+        gid = os.getenv("CUDA_DEVICE")
+        self.gpu_id = int(gid) if gid is not None else 0
+        self.gpu_polling_rate = gpu_polling_rate
+        self.num_test_reps = num_test_reps
+
         self.X = X
         self.Y = Y
         self.graphs = graphs
@@ -97,7 +115,9 @@ class Benchmark:
 
         # Create file and write header in same order
         with open(self.fname, "w") as f:
-            f.write(f"Model,Split,Epoch,fit_time,pred_time,metric_type,{','.join(self.met_order)}\n")
+            f.write(
+                f"Model,Split,Epoch,fit_time,pred_time,peak_gpu_mem_fit,peak_gpu_mem_infer,metric_type,{','.join(self.met_order)}\n"
+            )
 
         # Create splits
         self.splits = self.create_splits()
@@ -135,10 +155,10 @@ class Benchmark:
         tm = MultiClassGraphTsetlinMachine(**self.gtm_args)
         history: dict[int, dict] = {}
         for epoch in (pbar := tqdm(range(self.epochs), leave=False, dynamic_ncols=True)):
-            with (fit_timer := Timer()):
+            with (fit_timer := Monitor(self.gpu_id)):
                 tm.fit(graphs_train, y_train, epochs=1, incremental=True)
 
-            with (pred_timer := Timer()):
+            with (pred_timer := Monitor(self.gpu_id)):
                 y_val_pred = tm.predict(graphs_val)
 
             y_train_pred = tm.predict(graphs_train)
@@ -150,17 +170,20 @@ class Benchmark:
                 **{f"train_{k}": v for k, v in train_metrics.items()},
                 "fit_time": fit_timer.elapsed(),
                 "pred_time": pred_timer.elapsed(),
+                "peak_gpu_mem_fit": fit_timer.peak_memory(),
+                "peak_gpu_mem_infer": pred_timer.peak_memory(),
             }
             history[epoch] = metrics
             pbar.set_postfix_str(f"Acc: Train={metrics['train_accuracy']:.4f}, Val={metrics['val_accuracy']:.4f}")
 
             # Save metrics to file
-            row = f"GTM,{split_name},{epoch},{metrics['fit_time']},{metrics['pred_time']}"
+            row = f"GTM,{split_name},{epoch},{metrics['fit_time']},{metrics['pred_time']},{metrics['peak_gpu_mem_fit']},{metrics['peak_gpu_mem_infer']}"
             train_row = f"{row},train,{','.join(str(metrics[f'train_{k}']) for k in self.met_order)}"
             val_row = f"{row},val,{','.join(str(metrics[f'val_{k}']) for k in self.met_order)}"
             self.write_row(train_row)
             self.write_row(val_row)
 
+        del tm
         print("GTM Done.")
         # Is history needed, when we write to file directly?
         return history
@@ -168,13 +191,13 @@ class Benchmark:
     def fit_xgb(self, X_train, y_train, X_val, y_val, split_name: str) -> dict[int, dict]:
         if self.xgb_args is None:
             return {}
-        model = XGBClassifier(**self.xgb_args)
+        model = XGBClassifier(**self.xgb_args, device=f"cuda:{self.gpu_id}")
         history: dict[int, dict] = {}
 
-        with (fit_timer := Timer()):
+        with (fit_timer := Monitor(self.gpu_id)):
             model.fit(X_train, y_train)
 
-        with (pred_timer := Timer()):
+        with (pred_timer := Monitor(self.gpu_id)):
             y_val_pred = model.predict(X_val)
 
         y_train_pred = model.predict(X_train)
@@ -186,16 +209,19 @@ class Benchmark:
             **{f"train_{k}": v for k, v in train_metrics.items()},
             "fit_time": fit_timer.elapsed(),
             "pred_time": pred_timer.elapsed(),
+            "peak_gpu_mem_fit": fit_timer.peak_memory(),
+            "peak_gpu_mem_infer": pred_timer.peak_memory(),
         }
         history[0] = metrics
 
         # Save metrics to file
-        row = f"XGB,{split_name},0,{metrics['fit_time']},{metrics['pred_time']}"
+        row = f"XGB,{split_name},0,{metrics['fit_time']},{metrics['pred_time']},{metrics['peak_gpu_mem_fit']},{metrics['peak_gpu_mem_infer']}"
         train_row = f"{row},train,{','.join(str(metrics[f'train_{k}']) for k in self.met_order)}"
         val_row = f"{row},val,{','.join(str(metrics[f'val_{k}']) for k in self.met_order)}"
         self.write_row(train_row)
         self.write_row(val_row)
 
+        del model
         print("XGB Done.")
         return history
 
@@ -206,10 +232,10 @@ class Benchmark:
         model = VanillaTM(**self.vanilla_tm_args)
         history: dict[int, dict] = {}
         for epoch in (pbar := tqdm(range(self.epochs), leave=False, dynamic_ncols=True)):
-            with (fit_timer := Timer()):
+            with (fit_timer := Monitor(self.gpu_id)):
                 model.fit(X_train, y_train)
 
-            with (pred_timer := Timer()):
+            with (pred_timer := Monitor(self.gpu_id)):
                 y_val_pred = model.predict(X_val)
 
             y_train_pred = model.predict(X_train)
@@ -221,17 +247,20 @@ class Benchmark:
                 **{f"train_{k}": v for k, v in train_metrics.items()},
                 "fit_time": fit_timer.elapsed(),
                 "pred_time": pred_timer.elapsed(),
+                "peak_gpu_mem_fit": fit_timer.peak_memory(),
+                "peak_gpu_mem_infer": pred_timer.peak_memory(),
             }
             history[epoch] = metrics
             pbar.set_postfix_str(f"Acc: Train={metrics['train_accuracy']:.4f}, Val={metrics['val_accuracy']:.4f}")
 
             # Save metrics to file
-            row = f"VanillaTM,{split_name},{epoch},{metrics['fit_time']},{metrics['pred_time']}"
+            row = f"VanillaTM,{split_name},{epoch},{metrics['fit_time']},{metrics['pred_time']},{metrics['peak_gpu_mem_fit']},{metrics['peak_gpu_mem_infer']}"
             train_row = f"{row},train,{','.join(str(metrics[f'train_{k}']) for k in self.met_order)}"
             val_row = f"{row},val,{','.join(str(metrics[f'val_{k}']) for k in self.met_order)}"
             self.write_row(train_row)
             self.write_row(val_row)
 
+        del model
         print("Vanilla TM Done.")
         return history
 
@@ -242,10 +271,10 @@ class Benchmark:
         model = CoTM(**self.cotm_args)
         history: dict[int, dict] = {}
         for epoch in (pbar := tqdm(range(self.epochs), leave=False, dynamic_ncols=True)):
-            with (fit_timer := Timer()):
+            with (fit_timer := Monitor(self.gpu_id)):
                 model.fit(X_train, y_train, epochs=1, incremental=True)
 
-            with (pred_timer := Timer()):
+            with (pred_timer := Monitor(self.gpu_id)):
                 y_val_pred = model.predict(X_val)
 
             y_train_pred = model.predict(X_train)
@@ -257,17 +286,20 @@ class Benchmark:
                 **{f"train_{k}": v for k, v in train_metrics.items()},
                 "fit_time": fit_timer.elapsed(),
                 "pred_time": pred_timer.elapsed(),
+                "peak_gpu_mem_fit": fit_timer.peak_memory(),
+                "peak_gpu_mem_infer": pred_timer.peak_memory(),
             }
             history[epoch] = metrics
             pbar.set_postfix_str(f"Acc: Train={metrics['train_accuracy']:.4f}, Val={metrics['val_accuracy']:.4f}")
 
             # Save metrics to file
-            row = f"CoTM,{split_name},{epoch},{metrics['fit_time']},{metrics['pred_time']}"
+            row = f"CoTM,{split_name},{epoch},{metrics['fit_time']},{metrics['pred_time']},{metrics['peak_gpu_mem_fit']},{metrics['peak_gpu_mem_infer']}"
             train_row = f"{row},train,{','.join(str(metrics[f'train_{k}']) for k in self.met_order)}"
             val_row = f"{row},val,{','.join(str(metrics[f'val_{k}']) for k in self.met_order)}"
             self.write_row(train_row)
             self.write_row(val_row)
 
+        del model
         print("CoTM Done.")
         return history
 
@@ -299,7 +331,7 @@ class Benchmark:
             cotm_hist = self.fit_cotm(x_train_split, y_train_split, x_val_split, y_val_split, split_name)
 
         # Finally test set
-        for rep in range(5):
+        for rep in range(self.num_test_reps):
             print(f"=============Final evaluation on test set ---- {rep}=============")
 
             # XGB
