@@ -31,8 +31,22 @@ To verify that you are using the correct environement, you can run `which python
 ## Devcontainer
 Devcontainer configuration is provided for VSCode.
 
+- Remote SSH into cair-gpu17
+- Clone this repo somewhere.
+- Open repository as a folder (project) in VSCode.
+- When prompted to open in devcontainer, select "Reopen in Container".
+- If not prompted, open the command palette (Ctrl+Shift+P), and select "Dev Containers: Reopen in Container".
+- You should be dropped in `/workspace` folder inside the container, and it should have all the files.
+- Any changes to files in the devcontainer will be reflected on the host machine, and vice versa.
+
 ## Running experiment
-...
+- When starting the devcontiner for the first time, run `pixi install` to install the environment.
+- Copy the `template.py` file into your own folder.
+- Fill in the parameter and datasets.
+- The Benchmark needs your `Binarized Dataset`, `Graph Dataset`, and parameters for the different models.
+- An example for MultiValueXOR is in `test/test_bm_xor.py`.
+- First test the script. Activate the environment using `pixi shell` and run `python <file>`.
+- ...
 
 # TODO:
 - [x] Add pixi environement
