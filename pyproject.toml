@@ -13,11 +13,11 @@ requires = ["hatchling"]
 [tool.basedpyright]
 typeCheckingMode = "standard"
 reportUnusedImport = false
-reportMissingTypeStubs = "hint"
 exclude = [
     "**/__pycache__*",
     "**/.*",
     "**/data*",
+    "**/*.ipynb"
 ]
 
 [tool.ruff]

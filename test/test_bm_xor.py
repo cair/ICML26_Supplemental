@@ -95,10 +95,10 @@ if __name__ == "__main__":
     xgb_params = {}
 
     bm = Benchmark(
-        X_train,
-        Y_train,
-        graphs_train,
-        save_dir,
+        X=X_train,
+        Y=Y_train,
+        graphs=graphs_train,
+        save_dir=save_dir,
         name="mvxor",
         gtm_args=gtm_params,
         xgb_args=xgb_params,
