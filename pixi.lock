@@ -619,6 +619,8 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/21/51/0b1cbad62074439b867b4e04cc09b93f6699d78fd191bed2bbb44562e077/protobuf-6.33.0-cp39-abi3-manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/0b/a6/e2e8535d8146bce05de6e0ecf1099a7e2887d840ae2a7b3a09385543fd02/py3dmol-2.5.3-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ae/fe/073642e4bfc0fad53f013c146fd9d473eedf17c227ad3edbd3a8e8931d5c/pycuda-2025.1.2.tar.gz
+      - pypi: https://files.pythonhosted.org/packages/df/5c/60c8184712bb088d3f6332a399ab2c8a5e6a4b4250a41f65853497ea96fc/pyJoules-0.5.1-py2.py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/d7/4a/cac76c174bb439a0c46c9a4413fcbea5c6cabfb01879f7bbdb9fdfaed76c/pynvml-13.0.1-py3-none-any.whl
       - pypi: git+https://github.com/cair/PySparseCoalescedTsetlinMachineCUDA.git#2e0869eadbf4cf92ae915c3027c6a4035cba3af7
       - pypi: https://files.pythonhosted.org/packages/f6/84/c42c29ca4bff35baa286df70b0097e0b1c88fd57e8e6bdb09cb161a6f3c1/pytools-2025.2.5-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/25/7a/b0178788f8dc6cafce37a212c99565fa1fe7872c70c6c9c1e1a372d9d88f/rich-14.2.0-py3-none-any.whl
@@ -2900,7 +2902,7 @@ packages:
 - pypi: ./
   name: graphtm-exp
   version: 0.1.0
-  sha256: 9d7f8eab083ad7eed29fc36320c75f6fca3d0c50a05b4d51cd9e13f840d652ba
+  sha256: 97784db9cb6282d13ae5811cd8ac53adc495cee4c2ae81393c9d7a5ea818d6f1
   requires_python: '>=3.11'
   editable: true
 - pypi: git+https://github.com/cair/GraphTsetlinMachine.git#7c3ea27a3632d5b2967a52fb953ac28e3d052bb7
@@ -7482,6 +7484,27 @@ packages:
   - pkg:pypi/pygraphviz?source=hash-mapping
   size: 147838
   timestamp: 1759598316297
+- pypi: https://files.pythonhosted.org/packages/df/5c/60c8184712bb088d3f6332a399ab2c8a5e6a4b4250a41f65853497ea96fc/pyJoules-0.5.1-py2.py3-none-any.whl
+  name: pyjoules
+  version: 0.5.1
+  sha256: 558505e13b7e24ff2aceb5eab6e497f7cee101ed2605343238f25ff4750909cb
+  requires_dist:
+  - sphinx>=1.8.1 ; extra == 'docs'
+  - sphinx-autodoc-typehints>=1.6.0 ; extra == 'docs'
+  - pymongo>=3.9.0 ; extra == 'mongodb'
+  - pynvml>=8.0.4 ; extra == 'nvidia'
+  - pandas>=0.25.1 ; extra == 'pandas'
+  requires_python: '>=3.7'
+- pypi: https://files.pythonhosted.org/packages/d7/4a/cac76c174bb439a0c46c9a4413fcbea5c6cabfb01879f7bbdb9fdfaed76c/pynvml-13.0.1-py3-none-any.whl
+  name: pynvml
+  version: 13.0.1
+  sha256: e2b20e0a501eeec951e2455b7ab444759cf048e0e13a57b08049fa2775266aa8
+  requires_dist:
+  - nvidia-ml-py>=12.0.0
+  - pytest>=3.6 ; extra == 'test'
+  - pytest-runner ; extra == 'test'
+  - pytest-cov ; extra == 'test'
+  requires_python: '>=3.9'
 - conda: https://conda.anaconda.org/conda-forge/noarch/pyparsing-3.2.5-pyhcf101f3_0.conda
   sha256: 6814b61b94e95ffc45ec539a6424d8447895fef75b0fec7e1be31f5beee883fb
   md5: 6c8979be6d7a17692793114fa26916e8
