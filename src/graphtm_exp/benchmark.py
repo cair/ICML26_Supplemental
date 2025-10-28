@@ -14,6 +14,9 @@ from xgboost import XGBClassifier
 from graphtm_exp.graph import Graphs
 
 from .monitor import Monitor
+import logging
+
+logging.getLogger("tmu").setLevel(logging.WARNING)
 
 
 class Benchmark:

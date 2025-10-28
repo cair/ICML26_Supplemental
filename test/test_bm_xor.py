@@ -53,7 +53,7 @@ def generate_graphs(symbols, noise, graph_args: dict):
 
     graphs.encode()
 
-    return graphs, X, Y
+    return graphs, X.astype(np.uint32), Y.astype(np.uint32)
 
 
 if __name__ == "__main__":
@@ -92,6 +92,24 @@ if __name__ == "__main__":
         # "block": (128, 1, 1),
     }
 
+    vantm_params = {
+        "number_of_clauses": 1000,
+        "T": 2000,
+        "s": 1,
+        "platform": "GPU",
+        "weighted_clauses": True,
+    }
+
+    cotm_params = {
+        "number_of_clauses": 1000,
+        "T": 2000,
+        "s": 1,
+        "dim": (X_train.shape[1], 1, 1),
+        "patch_dim": (X_train.shape[1], 1),
+        # "grid": (16 * 13, 1, 1),
+        # "block": (128, 1, 1),
+    }
+
     xgb_params = {}
 
     bm = Benchmark(
@@ -102,6 +120,8 @@ if __name__ == "__main__":
         name="mvxor",
         gtm_args=gtm_params,
         xgb_args=xgb_params,
+        vanilla_tm_args=vantm_params,
+        cotm_args=cotm_params,
         X_test=X_test,
         Y_test=y_test,
         graphs_test=graphs_test,
