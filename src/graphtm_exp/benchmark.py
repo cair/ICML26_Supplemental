@@ -33,6 +33,7 @@ class Benchmark:
         graphs_test: Graphs | None = None,
         epochs: int = 50,
         gpu_polling_rate: float = 0.1,
+        num_test_reps: int = 5,
     ):
         """
         Benchmark
@@ -65,11 +66,16 @@ class Benchmark:
             Optional test graphs. If None, a split from graphs is used.
         epochs : int
             Number of epochs to train each model.
+        gpu_polling_rate : float
+            Polling rate for GPU memory monitoring.
+        num_test_reps : int
+            Number of repetitions for final test evaluation.
         """
 
         gid = os.getenv("CUDA_DEVICE")
         self.gpu_id = int(gid) if gid is not None else 0
         self.gpu_polling_rate = gpu_polling_rate
+        self.num_test_reps = num_test_reps
 
         self.X = X
         self.Y = Y
@@ -238,12 +244,14 @@ class Benchmark:
                 **{f"train_{k}": v for k, v in train_metrics.items()},
                 "fit_time": fit_timer.elapsed(),
                 "pred_time": pred_timer.elapsed(),
+                "peak_gpu_mem_fit": fit_timer.peak_memory(),
+                "peak_gpu_mem_infer": pred_timer.peak_memory(),
             }
             history[epoch] = metrics
             pbar.set_postfix_str(f"Acc: Train={metrics['train_accuracy']:.4f}, Val={metrics['val_accuracy']:.4f}")
 
             # Save metrics to file
-            row = f"VanillaTM,{split_name},{epoch},{metrics['fit_time']},{metrics['pred_time']}"
+            row = f"VanillaTM,{split_name},{epoch},{metrics['fit_time']},{metrics['pred_time']},{metrics['peak_gpu_mem_fit']},{metrics['peak_gpu_mem_infer']}"
             train_row = f"{row},train,{','.join(str(metrics[f'train_{k}']) for k in self.met_order)}"
             val_row = f"{row},val,{','.join(str(metrics[f'val_{k}']) for k in self.met_order)}"
             self.write_row(train_row)
@@ -275,12 +283,14 @@ class Benchmark:
                 **{f"train_{k}": v for k, v in train_metrics.items()},
                 "fit_time": fit_timer.elapsed(),
                 "pred_time": pred_timer.elapsed(),
+                "peak_gpu_mem_fit": fit_timer.peak_memory(),
+                "peak_gpu_mem_infer": pred_timer.peak_memory(),
             }
             history[epoch] = metrics
             pbar.set_postfix_str(f"Acc: Train={metrics['train_accuracy']:.4f}, Val={metrics['val_accuracy']:.4f}")
 
             # Save metrics to file
-            row = f"CoTM,{split_name},{epoch},{metrics['fit_time']},{metrics['pred_time']}"
+            row = f"CoTM,{split_name},{epoch},{metrics['fit_time']},{metrics['pred_time']},{metrics['peak_gpu_mem_fit']},{metrics['peak_gpu_mem_infer']}"
             train_row = f"{row},train,{','.join(str(metrics[f'train_{k}']) for k in self.met_order)}"
             val_row = f"{row},val,{','.join(str(metrics[f'val_{k}']) for k in self.met_order)}"
             self.write_row(train_row)
@@ -318,7 +328,7 @@ class Benchmark:
             cotm_hist = self.fit_cotm(x_train_split, y_train_split, x_val_split, y_val_split, split_name)
 
         # Finally test set
-        for rep in range(5):
+        for rep in range(self.num_test_reps):
             print(f"=============Final evaluation on test set ---- {rep}=============")
 
             # XGB
