@@ -1,5 +1,5 @@
 {
-  "name": "GTM_Exp_DC",
+  "name": "GTM_Exp_${localEnv:UNAME}",
   "dockerComposeFile": ["docker-compose.yml"],
   "service": "dev",
   "workspaceFolder": "/workspace",

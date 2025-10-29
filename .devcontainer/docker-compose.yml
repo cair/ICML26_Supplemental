@@ -7,7 +7,8 @@ services:
         UID: ${UID}
         GID: ${GID}
         UNAME: ${UNAME}
-    image: td
+    image: gtm_exp:${UNAME}
+    container_name: dev_${UNAME}
     network_mode: host
     environment:
       TERM: ${TERM}

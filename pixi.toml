@@ -4,6 +4,7 @@ name = "GraphTM-exp"
 platforms = ["linux-64"]
 
 [tasks]
+bm = { cmd = "./run_bm.sh {{filename}} {{gpuid}}", args = ["filename", "gpuid"]}
 
 [system-requirements]
 cuda = "12"
