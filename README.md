@@ -33,6 +33,10 @@ Devcontainer configuration is provided for VSCode.
 
 - Remote SSH into cair-gpu17
 - Clone this repo somewhere.
+- Run the `make_env.sh` script to create `.env` file for the devcontainer.
+```bash
+sh .devcontainer/make_env.sh
+```
 - Open repository as a folder (project) in VSCode.
 - When prompted to open in devcontainer, select "Reopen in Container".
 - If not prompted, open the command palette (Ctrl+Shift+P), and select "Dev Containers: Reopen in Container".
