@@ -3,15 +3,12 @@ set -euo pipefail
 
 if [ -z "$1" ] || [ -z "$2" ]; then
     echo "Error: Missing arguments"
-    echo "Usage: $0 <python_file> --gpu=<id>"
+    echo "Usage: $0 <python_file> <gpuid>"
     exit 1
 fi
 
 PYTHON_FILE=$1
-GPU_ARG=$2
-
-# Parse GPU_ID
-GPU_ID="${GPU_ARG#*=}"
+GPU_ID=$2
 
 SESSION_NAME="$(id -un)"
 CMD="CUDA_VISIBLE_DEVICES=$GPU_ID pixi run python $PYTHON_FILE"

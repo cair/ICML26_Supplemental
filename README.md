@@ -44,13 +44,12 @@ sh .devcontainer/make_env.sh
 - Any changes to files in the devcontainer will be reflected on the host machine, and vice versa.
 
 ## Running experiment
-- When starting the devcontiner for the first time, run `pixi install` to install the environment.
 - Copy the `template.py` file into your own folder.
 - Fill in the parameter and datasets.
 - The Benchmark needs your `Binarized Dataset`, `Graph Dataset`, and parameters for the different models.
 - An example for MultiValueXOR is in `test/test_bm_xor.py`.
 - First test the script. Activate the environment using `pixi shell` and run `python <file>`.
-- ...
+- To run the benchmark use `pixi run bm <file> <gpuid>`. This will run the benchmark in a new tmux session, so that the exepriment does not stop if the devcontainer is disconnected.
 
 # TODO:
 - [x] Add pixi environement
