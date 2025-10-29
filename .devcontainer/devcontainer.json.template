@@ -1,0 +1,38 @@
+{
+    "name": "GTM_EXP_$USER_NAME",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "args": {
+            "USER_ID": "$USER_ID",
+            "GROUP_ID": "$GROUP_ID",
+            "USER_NAME": "$USER_NAME"
+        },
+        "options": [
+            "--tag=gtm_exp_container_$USER_NAME:latest"
+        ]
+    },
+    "remoteUser": "$USER_NAME",
+    "updateRemoteUserUID": true,
+    "runArgs": [
+        "--rm",
+        "--gpus",
+        "all",
+        "--name=gtm_exp_container_$USER_NAME"
+    ],
+    "mounts": [
+        "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
+    ],
+    "workspaceFolder": "/workspace",
+    "overrideCommand": true,
+    "postStartCommand": "pixi install && tmux new -A -d -s do_not_close",
+    "shutdownAction": "none",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-python.python",
+                "ms-toolsai.jupyter"
+            ]
+        }
+    }
+}

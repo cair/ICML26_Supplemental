@@ -12,11 +12,11 @@ ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 
-# Change user
-ARG USER_ID
-ARG GROUP_ID
-ARG USER_NAME
-RUN useradd -m -l -s /bin/bash -d /home/"${USER_NAME}" -u "${USER_ID}" -g "${GROUP_ID}" "${USER_NAME}" && \
-    echo "${USER_NAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-USER "${USER_NAME}"
+# Change user 
+ARG UID
+ARG GID
+ARG UNAME
+RUN useradd -m -l -s /bin/bash -d /home/"${UNAME}" -u "${UID}" -g "${GID}" "${UNAME}" && \
+    echo "${UNAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+USER "${UNAME}"
 CMD [ "tail", "-f", "/dev/null" ]
