@@ -14,7 +14,6 @@
     "remoteUser": "$USER_NAME",
     "updateRemoteUserUID": true,
     "runArgs": [
-        "--rm",
         "--gpus",
         "all",
         "--name=gtm_exp_container_$USER_NAME"
