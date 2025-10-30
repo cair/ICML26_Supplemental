@@ -179,7 +179,7 @@ X_graph_test, clean_df_test = dataset_to_1DPharmaCAIRGraphs(df=df_test, pharm_fe
 
 
 N_CLAUSES = 1000
-T = 500
+T = 500*10
 s = 5.0
 DEPTH = 2
 MP_SIZE = 10000
@@ -193,7 +193,8 @@ graph_TM = MultiClassGraphTsetlinMachine(
     s=s,
     depth=DEPTH,
     message_size=MP_SIZE,
-    message_bits=2
+    message_bits=2,
+    number_of_state_bits=15
 )
 
 print("--- Training Graph Tsetlin Machine ---")
