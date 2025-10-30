@@ -21,12 +21,15 @@ Devcontainer configuration is provided for VSCode.
 ### Running experiment
 - Copy the `template.py` file into your own folder.
 - Fill in the parameters and datasets in `template.py` and rename it to `<your_file>`.
-- The Benchmark needs your `Binarized Dataset`, `Graph Dataset`, and parameters for the different models.
-    - An example with MultiValueXOR is in `test/test_bm_xor.py`.
-    - Do NOT change `epochs`, `num_test_reps`
-    - If your experiments are large (time-wise), can change `gpu_polling_rate` to 0.5
-    - If your experiments are small (time-wise. e.g. training epoch takes 5 secs), change `gpu_polling_rate` to 0.01
-- Epochs = 50, num_test_reps = 5 (these have already been set as default, so no need to pass these parameters in <your_file> for benchmarking)
+- The Benchmark (`<your_file>`) needs your `Binarized Dataset`, `Graph Dataset`, and parameters for the different models.
+    - An example of Benchmark with MultiValueXOR is in `test/test_bm_xor.py`.
+- Parameters
+    - `gpu_pooling_rate` in `src/graphtm_exp/benchmark.py`
+        - If your experiments are large (time-wise), can change `gpu_polling_rate` to 0.5
+        - If your experiments are small (time-wise. e.g. training epoch takes 5 secs), change `gpu_polling_rate` to 0.01
+    - Epochs = 50, num_test_reps = 5 (these have already been set as default, so no need to pass these parameters in <your_file> for benchmarking)
+    - Models available are GTM, CoTM, VanillaTM and XGBoost.
+        - To opt out of running any of the models, pass the corresponding '*_args' as `None` in `<your_file>`
 - To test the script - activate the environment using `pixi shell` and run `python <your_file>`.
 - To run the benchmark use `pixi run bm <your_folder>/<your_file> <gpuid>`. 
 
@@ -39,6 +42,7 @@ Devcontainer configuration is provided for VSCode.
 - Output is a csv file (results) and a pickle file(splits)
 
     - Results are on different validation splits, using different models, and reported as 'all classes' and 'per class'
+
 
 
 ## Details
