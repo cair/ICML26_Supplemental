@@ -49,7 +49,19 @@ Devcontainer configuration is provided for VSCode.
 - The Benchmark needs your `Binarized Dataset`, `Graph Dataset`, and parameters for the different models.
 - An example for MultiValueXOR is in `test/test_bm_xor.py`.
 - First test the script. Activate the environment using `pixi shell` and run `python <file>`.
-- To run the benchmark use `pixi run bm <file> <gpuid>`. This will run the benchmark in a new tmux session, so that the exepriment does not stop if the devcontainer is disconnected.
+- To run the benchmark use `pixi run bm <file> <gpuid>`. 
+
+- - to get <gpuid>, run `nvtop` or `nvidia-smi`, check which gpu is free, choose that.
+
+- - This will run the benchmark in a new tmux session, so that the experiment does not stop if the devcontainer is disconnected. 
+
+- - To view, run `tmux attach`.
+
+- - Output is a csv file (results) and a pickle file(splits)
+
+- - Results are on different validation splits, using different models, and reported as 'all classes' and 'per class'
+
+##
 
 # TODO:
 - [x] Add pixi environement
