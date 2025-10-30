@@ -1,6 +1,44 @@
 # Experiments and Benchmarks for the GraphTsetlinMachine paper
 
-## Environment Setup
+## Quick Start
+
+### Devcontainer
+Devcontainer configuration is provided for VSCode.
+
+- Remote SSH into cair-gpu17
+- Clone this repo somewhere.
+- Run the `.devcontainer/build` script to create `devcontainer.json` file for the devcontainer, with proper user and stuff.
+```bash
+./.devcontainer/build
+```
+- Open repository as a folder (project) in VSCode.
+- When prompted to open in devcontainer, select "Reopen in Container".
+- If not prompted, open the command palette (Ctrl+Shift+P), and select "Dev Containers: Reopen in Container".
+- You should be dropped in `/workspace` folder inside the container, with all the files and environment installed.
+- Any changes to files in the devcontainer will be reflected on the host machine, and vice versa.
+
+### Running experiment
+- Copy the `template.py` file into your own folder.
+- Fill in the parameters and datasets.
+- The Benchmark needs your `Binarized Dataset`, `Graph Dataset`, and parameters for the different models.
+- An example for MultiValueXOR is in `test/test_bm_xor.py`.
+- First test the script - activate the environment using `pixi shell` and run `python <your_file>`.
+- To run the benchmark use `pixi run bm <your_file> <gpuid>`. 
+
+    - - to get <gpuid>, run `nvtop` or `nvidia-smi`, check which gpu is free, choose that.
+
+    - - This will run the benchmark in a new tmux session, so that the experiment does not stop if the devcontainer is disconnected. 
+
+    - - To view, run `tmux attach`.
+
+- Output is a csv file (results) and a pickle file(splits)
+
+    - - Results are on different validation splits, using different models, and reported as 'all classes' and 'per class'
+
+
+## Details
+
+### Environment Setup
 Uses [Pixi](https://pixi.sh) to create and manage the environment. The environement is defined in the `pixi.yaml` file. 
 To create the environment, run:
 
@@ -28,38 +66,7 @@ pixi shell
 
 To verify that you are using the correct environement, you can run `which python` and check if the path points to the something like `...folder/.pixi/envs/.../python`
 
-## Devcontainer
-Devcontainer configuration is provided for VSCode.
 
-- Remote SSH into cair-gpu17
-- Clone this repo somewhere.
-- Run the `.devcontainer/build` script to create `devcontainer.json` file for the devcontainer, with proper user and stuff.
-```bash
-./.devcontainer/build
-```
-- Open repository as a folder (project) in VSCode.
-- When prompted to open in devcontainer, select "Reopen in Container".
-- If not prompted, open the command palette (Ctrl+Shift+P), and select "Dev Containers: Reopen in Container".
-- You should be dropped in `/workspace` folder inside the container, with all the files and environment installed.
-- Any changes to files in the devcontainer will be reflected on the host machine, and vice versa.
-
-## Running experiment
-- Copy the `template.py` file into your own folder.
-- Fill in the parameter and datasets.
-- The Benchmark needs your `Binarized Dataset`, `Graph Dataset`, and parameters for the different models.
-- An example for MultiValueXOR is in `test/test_bm_xor.py`.
-- First test the script. Activate the environment using `pixi shell` and run `python <file>`.
-- To run the benchmark use `pixi run bm <file> <gpuid>`. 
-
-- - to get <gpuid>, run `nvtop` or `nvidia-smi`, check which gpu is free, choose that.
-
-- - This will run the benchmark in a new tmux session, so that the experiment does not stop if the devcontainer is disconnected. 
-
-- - To view, run `tmux attach`.
-
-- - Output is a csv file (results) and a pickle file(splits)
-
-- - Results are on different validation splits, using different models, and reported as 'all classes' and 'per class'
 
 ##
 
