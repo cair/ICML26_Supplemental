@@ -56,6 +56,16 @@ def generate_graphs(symbols, noise, graph_args: dict):
     return graphs, X.astype(np.uint32), Y.astype(np.uint32)
 
 
+def bin_X(X, bins):
+    # One-hot each feature into bins
+    num_samples, num_features = X.shape
+    X_binned = np.zeros((num_samples, num_features, bins), dtype=np.uint32)
+
+    X_binned[np.arange(num_samples), 0, X[:, 0]] = 1
+    X_binned[np.arange(num_samples), 1, X[:, 1]] = 1
+    return X_binned.reshape(num_samples, num_features * bins)
+
+
 if __name__ == "__main__":
     noise = 0.05
     num_value = 100
@@ -77,6 +87,9 @@ if __name__ == "__main__":
             "init_with": graphs_train,
         },
     )
+
+    X_train = bin_X(X_train, num_value)
+    X_test = bin_X(X_test, num_value)
 
     save_dir = "./temp"
 
@@ -120,7 +133,7 @@ if __name__ == "__main__":
         name="mvxor",
         gtm_args=gtm_params,
         xgb_args=xgb_params,
-        vanilla_tm_args=vantm_params,
+        # vanilla_tm_args=vantm_params,
         cotm_args=cotm_params,
         X_test=X_test,
         Y_test=y_test,

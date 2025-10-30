@@ -15,8 +15,7 @@ from tmu.models.classification.vanilla_classifier import TMClassifier as Vanilla
 from tqdm import tqdm
 from xgboost import XGBClassifier
 
-from graphtm_exp.graph import Graphs
-
+from .graph import Graphs
 from .monitor import Monitor
 
 logging.getLogger("tmu").setLevel(logging.ERROR)
