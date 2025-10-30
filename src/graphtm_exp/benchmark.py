@@ -10,7 +10,7 @@ import psutil
 from GraphTsetlinMachine.tm import MultiClassGraphTsetlinMachine
 from PySparseCoalescedTsetlinMachineCUDA.tm import MultiClassConvolutionalTsetlinMachine2D as CoTM
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import train_test_split
 from tmu.models.classification.vanilla_classifier import TMClassifier as VanillaTM
 from tqdm import tqdm
 from xgboost import XGBClassifier
@@ -19,7 +19,7 @@ from graphtm_exp.graph import Graphs
 
 from .monitor import Monitor
 
-logging.getLogger("tmu").setLevel(logging.WARNING)
+logging.getLogger("tmu").setLevel(logging.ERROR)
 
 
 def system_info(gpu_id: int):
@@ -30,7 +30,6 @@ def system_info(gpu_id: int):
     info = {
         "cpu_name": cpu_info["brand_raw"],
         "cpu_cores": cpu_info["count"],
-        "cpu_threads": psutil.cpu_count(logical=True),
         "cpu_freq_mhz": psutil.cpu_freq().max,
         "total_ram_gb": round(psutil.virtual_memory().total / (1024**3), 2),
         "os": platform.platform(),
@@ -58,6 +57,7 @@ class Benchmark:
         graphs_test: Graphs | None = None,
         epochs: int = 50,
         gpu_polling_rate: float = 0.1,
+        num_val_splits: int = 5,
         num_test_reps: int = 5,
     ):
         """
@@ -93,14 +93,22 @@ class Benchmark:
             Number of epochs to train each model.
         gpu_polling_rate : float
             Polling rate for GPU memory monitoring.
+        num_val_splits : int
+            Number of validation splits.
         num_test_reps : int
             Number of repetitions for final test evaluation.
         """
+
+        # Make graphs subsettable
+        graphs.__class__ = Graphs
+        if graphs_test is not None:
+            graphs_test.__class__ = Graphs
 
         gid = os.getenv("CUDA_VISIBLE_DEVICES")
         self.gpu_id = int(gid) if gid is not None else 0
         self.gpu_polling_rate = gpu_polling_rate
         self.num_test_reps = num_test_reps
+        self.num_val_splits = num_val_splits
 
         self.X = X
         self.Y = Y
@@ -158,14 +166,11 @@ class Benchmark:
         """
         Create Splits. Return a dict [split_name: (train_idx, val_idx)]
         """
-        # Maybe this can be done in __init__?
-
-        self.kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=2)
-        kf_splits = self.kf.split(np.zeros(self.Y_train.shape[0]), self.Y_train)
-
         splits = {}
-        for fold, (train_idx, val_idx) in enumerate(kf_splits):
-            splits[f"val_{fold}"] = (train_idx, val_idx)
+        iota = np.arange(self.X_train.shape[0])
+        for split in range(self.num_val_splits):
+            train_idx, val_idx = train_test_split(iota, test_size=0.2, random_state=2 + split)
+            splits[f"val_{split}"] = (train_idx, val_idx)
 
         return splits
 
