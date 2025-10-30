@@ -82,8 +82,8 @@ To verify that you are using the correct environement, you can run `which python
     - [x] GTM
     - [x] TM
     - [x] XGBoost
-    - [x] Memory and energy measurements
+    - [x] Memory measurements
     - [ ] Energy measurements
 - [x] Test environment
 - [x] Test devcontainer
-- [ ] Add detailed instructions
+- [x] Add detailed instructions
