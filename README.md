@@ -20,21 +20,24 @@ Devcontainer configuration is provided for VSCode.
 
 ### Running experiment
 - Copy the `template.py` file into your own folder.
-- Fill in the parameters and datasets.
+- Fill in the parameters and datasets in `template.py` and rename it to `<your_file>`.
 - The Benchmark needs your `Binarized Dataset`, `Graph Dataset`, and parameters for the different models.
-- An example for MultiValueXOR is in `test/test_bm_xor.py`.
+    - An example with MultiValueXOR is in `test/test_bm_xor.py`.
+    - Do NOT change `epochs`, `num_test_reps`
+    - If your experiments are large (time-wise), can change `gpu_polling_rate` to 0.5
+    - If your experiments are small (time-wise. e.g. training epoch takes 5 secs), change `gpu_polling_rate` to 0.01
 - First test the script - activate the environment using `pixi shell` and run `python <your_file>`.
-- To run the benchmark use `pixi run bm <your_file> <gpuid>`. 
+- To run the benchmark use `pixi run bm <your_folder>/<your_file> <gpuid>`. 
 
-    - - to get <gpuid>, run `nvtop` or `nvidia-smi`, check which gpu is free, choose that.
+    - to get <gpuid>, run `nvtop` or `nvidia-smi`, check which gpu is free, choose that.
 
-    - - This will run the benchmark in a new tmux session, so that the experiment does not stop if the devcontainer is disconnected. 
+    - This will run the benchmark in a new tmux session, so that the experiment does not stop if the devcontainer is disconnected. 
 
-    - - To view, run `tmux attach`.
+    - To view, run `tmux attach`.
 
 - Output is a csv file (results) and a pickle file(splits)
 
-    - - Results are on different validation splits, using different models, and reported as 'all classes' and 'per class'
+    - Results are on different validation splits, using different models, and reported as 'all classes' and 'per class'
 
 
 ## Details
