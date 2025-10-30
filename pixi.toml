@@ -40,6 +40,7 @@ netgraph = ">=4.13.2,<5"
 py-xgboost = ">=3.0.5,<4"
 chembl_structure_pipeline = ">=1.2.2,<2"
 nvidia-ml-py = ">=13.580.82,<14"
+py-cpuinfo = ">=9.0.0,<10"
 
 [pypi-dependencies]
 graphtm_exp = { path = ".", editable = true }

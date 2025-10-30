@@ -1,8 +1,12 @@
-# WARN: INCOMPLETE
+import logging
 import os
+import pickle
+import platform
 from datetime import datetime
 
+import cpuinfo
 import numpy as np
+import psutil
 from GraphTsetlinMachine.tm import MultiClassGraphTsetlinMachine
 from PySparseCoalescedTsetlinMachineCUDA.tm import MultiClassConvolutionalTsetlinMachine2D as CoTM
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
@@ -14,10 +18,27 @@ from xgboost import XGBClassifier
 from graphtm_exp.graph import Graphs
 
 from .monitor import Monitor
-import logging
-import pickle
 
 logging.getLogger("tmu").setLevel(logging.WARNING)
+
+
+def system_info(gpu_id: int):
+    import pynvml
+
+    pynvml.nvmlInit()
+    cpu_info = cpuinfo.get_cpu_info()
+    info = {
+        "cpu_name": cpu_info["brand_raw"],
+        "cpu_cores": cpu_info["count"],
+        "cpu_threads": psutil.cpu_count(logical=True),
+        "cpu_freq_mhz": psutil.cpu_freq().max,
+        "total_ram_gb": round(psutil.virtual_memory().total / (1024**3), 2),
+        "os": platform.platform(),
+    }
+    handle = pynvml.nvmlDeviceGetHandleByIndex(gpu_id)
+    info["gpu_name"] = pynvml.nvmlDeviceGetName(handle)
+    info["mem_info"] = pynvml.nvmlDeviceGetMemoryInfo(handle)
+    return info
 
 
 class Benchmark:
@@ -76,7 +97,7 @@ class Benchmark:
             Number of repetitions for final test evaluation.
         """
 
-        gid = 0 #os.getenv("CUDA_VISIBLE_DEVICES")
+        gid = os.getenv("CUDA_VISIBLE_DEVICES")
         self.gpu_id = int(gid) if gid is not None else 0
         self.gpu_polling_rate = gpu_polling_rate
         self.num_test_reps = num_test_reps
@@ -124,9 +145,14 @@ class Benchmark:
 
         # Create splits
         self.splits = self.create_splits()
-        
         with open(f"{self.save_dir}/splits.pickle", "wb") as f:
             pickle.dump(self.splits, f)
+
+        # Log system info
+        sys_info = system_info(self.gpu_id)
+        with open(f"{self.save_dir}/system_info.txt", "w") as f:
+            for k, v in sys_info.items():
+                f.write(f"{k}\t{v}\n")
 
     def create_splits(self) -> dict[str, tuple[np.ndarray, np.ndarray]]:
         """
@@ -143,7 +169,7 @@ class Benchmark:
 
         return splits
 
-    def metrics(self, ytrue, ypred)-> dict[str, dict]:
+    def metrics(self, ytrue, ypred) -> dict[str, dict]:
         num_classes = np.max(ytrue) + 1
         cnames = [f"class_{i}" for i in range(num_classes)]
         precision, recall, f1, _ = precision_recall_fscore_support(ytrue, ypred, average="weighted", zero_division=0)
@@ -153,17 +179,37 @@ class Benchmark:
         perc_pre, perc_rec, perc_f1, _ = precision_recall_fscore_support(ytrue, ypred, average=None, zero_division=0)
         class_accuracies = [accuracy_score(ytrue == i, ypred == i) for i in range(num_classes)]
 
-        ret  = {
-            "weighted" : {"precision": precision, "recall": recall, "f1": f1, "accuracy": accuracy},
-            **{cnames[i]: {"precision": perc_pre[i], "recall": perc_rec[i], "f1": perc_f1[i], "accuracy": class_accuracies[i]} for i in range(num_classes)}
+        ret = {
+            "weighted": {"precision": precision, "recall": recall, "f1": f1, "accuracy": accuracy},
+            **{
+                cnames[i]: {
+                    "precision": perc_pre[i],
+                    "recall": perc_rec[i],
+                    "f1": perc_f1[i],
+                    "accuracy": class_accuracies[i],
+                }
+                for i in range(num_classes)
+            },
         }
         return ret
 
-    def write_metrics(self, model_name: str, split_name: str, epoch: int, monitoring: dict, train_metrics: dict[str, dict], val_metrics: dict[str, dict]):
+    def write_metrics(
+        self,
+        model_name: str,
+        split_name: str,
+        epoch: int,
+        monitoring: dict,
+        train_metrics: dict[str, dict],
+        val_metrics: dict[str, dict],
+    ):
         com_row = f"{model_name},{split_name},{epoch},{monitoring['fit_time']},{monitoring['pred_time']},{monitoring['peak_gpu_mem_fit']},{monitoring['peak_gpu_mem_infer']}"
         for c_name in train_metrics.keys():
-            train_row_class = f"{com_row},train,{','.join(str(train_metrics[c_name][f'{k}']) for k in self.met_order)},{c_name}"
-            val_row_class = f"{com_row},val,{','.join(str(val_metrics[c_name][f'{k}']) for k in self.met_order)},{c_name}"
+            train_row_class = (
+                f"{com_row},train,{','.join(str(train_metrics[c_name][f'{k}']) for k in self.met_order)},{c_name}"
+            )
+            val_row_class = (
+                f"{com_row},val,{','.join(str(val_metrics[c_name][f'{k}']) for k in self.met_order)},{c_name}"
+            )
             self.write_row(train_row_class)
             self.write_row(val_row_class)
 
@@ -174,9 +220,10 @@ class Benchmark:
         graphs_val: Graphs,
         y_val: np.ndarray,
         split_name: str,
-    ) -> dict[int, dict]:
+    ):
         if self.gtm_args is None:
-            return {}
+            return
+
         tm = MultiClassGraphTsetlinMachine(**self.gtm_args)
         for epoch in (pbar := tqdm(range(self.epochs), leave=False, dynamic_ncols=True)):
             with (fit_timer := Monitor(self.gpu_id)):
@@ -189,21 +236,29 @@ class Benchmark:
 
             val_metrics = self.metrics(y_val, y_val_pred)
             train_metrics = self.metrics(y_train, y_train_pred)
-            
-            self.write_metrics(model_name="GTM", split_name=split_name, epoch=epoch, monitoring={
-                "fit_time": fit_timer.elapsed(),
-                "pred_time": pred_timer.elapsed(),
-                "peak_gpu_mem_fit": fit_timer.peak_memory(),
-                "peak_gpu_mem_infer": pred_timer.peak_memory(),
-            }, train_metrics=train_metrics, val_metrics=val_metrics)
-            
+
+            self.write_metrics(
+                model_name="GTM",
+                split_name=split_name,
+                epoch=epoch,
+                monitoring={
+                    "fit_time": fit_timer.elapsed(),
+                    "pred_time": pred_timer.elapsed(),
+                    "peak_gpu_mem_fit": fit_timer.peak_memory(),
+                    "peak_gpu_mem_infer": pred_timer.peak_memory(),
+                },
+                train_metrics=train_metrics,
+                val_metrics=val_metrics,
+            )
+
         del tm
         print("GTM Done.")
 
-    def fit_xgb(self, X_train, y_train, X_val, y_val, split_name: str) -> dict[int, dict]:
+    def fit_xgb(self, X_train, y_train, X_val, y_val, split_name: str):
         if self.xgb_args is None:
-            return {}
-        model = XGBClassifier(**self.xgb_args, device=f"cuda:{self.gpu_id}")
+            return
+
+        model = XGBClassifier(**self.xgb_args, device="cuda:0")
 
         with (fit_timer := Monitor(self.gpu_id)):
             model.fit(X_train, y_train)
@@ -215,20 +270,27 @@ class Benchmark:
 
         val_metrics = self.metrics(y_val, y_val_pred)
         train_metrics = self.metrics(y_train, y_train_pred)
-        
-        self.write_metrics(model_name="XGB", split_name=split_name, epoch=0, monitoring={
-            "fit_time": fit_timer.elapsed(),
-            "pred_time": pred_timer.elapsed(),
-            "peak_gpu_mem_fit": fit_timer.peak_memory(),
-            "peak_gpu_mem_infer": pred_timer.peak_memory(),
-        }, train_metrics=train_metrics, val_metrics=val_metrics)
+
+        self.write_metrics(
+            model_name="XGB",
+            split_name=split_name,
+            epoch=0,
+            monitoring={
+                "fit_time": fit_timer.elapsed(),
+                "pred_time": pred_timer.elapsed(),
+                "peak_gpu_mem_fit": fit_timer.peak_memory(),
+                "peak_gpu_mem_infer": pred_timer.peak_memory(),
+            },
+            train_metrics=train_metrics,
+            val_metrics=val_metrics,
+        )
 
         del model
         print("XGB Done.")
 
-    def fit_vanilla_tm(self, X_train, y_train, X_val, y_val, split_name: str) -> dict[int, dict]:
+    def fit_vanilla_tm(self, X_train, y_train, X_val, y_val, split_name: str):
         if self.vanilla_tm_args is None:
-            return {}
+            return
 
         model = VanillaTM(**self.vanilla_tm_args)
         for epoch in (pbar := tqdm(range(self.epochs), leave=False, dynamic_ncols=True)):
@@ -243,19 +305,26 @@ class Benchmark:
             val_metrics = self.metrics(y_val, y_val_pred)
             train_metrics = self.metrics(y_train, y_train_pred)
 
-            self.write_metrics(model_name="Vanilla_TM", split_name=split_name, epoch=epoch, monitoring={
-                "fit_time": fit_timer.elapsed(),
-                "pred_time": pred_timer.elapsed(),
-                "peak_gpu_mem_fit": fit_timer.peak_memory(),
-                "peak_gpu_mem_infer": pred_timer.peak_memory(),
-            }, train_metrics=train_metrics, val_metrics=val_metrics)
+            self.write_metrics(
+                model_name="Vanilla_TM",
+                split_name=split_name,
+                epoch=epoch,
+                monitoring={
+                    "fit_time": fit_timer.elapsed(),
+                    "pred_time": pred_timer.elapsed(),
+                    "peak_gpu_mem_fit": fit_timer.peak_memory(),
+                    "peak_gpu_mem_infer": pred_timer.peak_memory(),
+                },
+                train_metrics=train_metrics,
+                val_metrics=val_metrics,
+            )
 
         del model
         print("Vanilla TM Done.")
 
-    def fit_cotm(self, X_train, y_train, X_val, y_val, split_name: str) -> dict[int, dict]:
+    def fit_cotm(self, X_train, y_train, X_val, y_val, split_name: str):
         if self.cotm_args is None:
-            return {}
+            return
 
         model = CoTM(**self.cotm_args)
         for epoch in (pbar := tqdm(range(self.epochs), leave=False, dynamic_ncols=True)):
@@ -269,12 +338,19 @@ class Benchmark:
 
             val_metrics = self.metrics(y_val, y_val_pred)
             train_metrics = self.metrics(y_train, y_train_pred)
-            self.write_metrics(model_name="CoTM", split_name=split_name, epoch=epoch, monitoring={
-                "fit_time": fit_timer.elapsed(),
-                "pred_time": pred_timer.elapsed(),
-                "peak_gpu_mem_fit": fit_timer.peak_memory(),
-                "peak_gpu_mem_infer": pred_timer.peak_memory(),
-            }, train_metrics=train_metrics, val_metrics=val_metrics)
+            self.write_metrics(
+                model_name="CoTM",
+                split_name=split_name,
+                epoch=epoch,
+                monitoring={
+                    "fit_time": fit_timer.elapsed(),
+                    "pred_time": pred_timer.elapsed(),
+                    "peak_gpu_mem_fit": fit_timer.peak_memory(),
+                    "peak_gpu_mem_infer": pred_timer.peak_memory(),
+                },
+                train_metrics=train_metrics,
+                val_metrics=val_metrics,
+            )
 
         del model
         print("CoTM Done.")
@@ -282,7 +358,7 @@ class Benchmark:
     def write_row(self, row: str):
         with open(self.fname, "a") as f:
             f.write(row + "\n")
-            
+
     # Run model on all the splits
     def run_model(self, model_name: str):
         print(f"=============Running model: {model_name}=============")
@@ -305,7 +381,7 @@ class Benchmark:
                 self.fit_cotm(x_train_split, y_train_split, x_val_split, y_val_split, split_name)
             else:
                 raise ValueError(f"Unknown model name: {model_name}")
-            
+
         for rep in range(self.num_test_reps):
             print(f"=============Final evaluation on test set ---- {rep}=============")
             if model_name == "GTM":
@@ -318,48 +394,8 @@ class Benchmark:
                 self.fit_cotm(self.X_train, self.Y_train, self.X_test, self.Y_test, f"test_{rep}")
             else:
                 raise ValueError(f"Unknown model name: {model_name}")
-        
 
     def run(self):
         for model_name in ["XGB", "GTM", "Vanilla_TM", "CoTM"]:
             self.run_model(model_name)
-
-        # Go through each split
-        # for split_name, (train_idx, val_idx) in self.splits.items():
-        #     print(f"=============Running split: {split_name}=============")
-        #     graphs_train_split = self.graphs_train[train_idx]
-        #     y_train_split = self.Y_train[train_idx]
-        #     graphs_val_split = self.graphs_train[val_idx]
-        #     y_val_split = self.Y_train[val_idx]
-        #     x_train_split = self.X_train[train_idx]
-        #     x_val_split = self.X_train[val_idx]
-        #
-        #     # XGB
-        #     self.fit_xgb(x_train_split, y_train_split, x_val_split, y_val_split, split_name)
-        #
-        #     # GTM
-        #     self.fit_gtm(graphs_train_split, y_train_split, graphs_val_split, y_val_split, split_name)
-        #
-        #     # Vanilla TM
-        #     self.fit_vanilla_tm(x_train_split, y_train_split, x_val_split, y_val_split, split_name)
-        #
-        #     # CoTM
-        #     self.fit_cotm(x_train_split, y_train_split, x_val_split, y_val_split, split_name)
-        #
-        # # Finally test set
-        # for rep in range(self.num_test_reps):
-        #     print(f"=============Final evaluation on test set ---- {rep}=============")
-        #
-        #     # XGB
-        #     self.fit_xgb(self.X_train, self.Y_train, self.X_test, self.Y_test, f"test_{rep}")
-        #
-        #     # GTM
-        #     self.fit_gtm(self.graphs_train, self.Y_train, self.graphs_test, self.Y_test, f"test_{rep}")
-        #
-        #     # Vanilla TM
-        #     self.fit_vanilla_tm(self.X_train, self.Y_train, self.X_test, self.Y_test, f"test_{rep}")
-        #
-        #     # CoTM
-        #     self.fit_cotm(self.X_train, self.Y_train, self.X_test, self.Y_test, f"test_{rep}")
-
         print(f"We are done! Results saved to {self.fname}.")
