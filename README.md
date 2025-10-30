@@ -6,14 +6,15 @@
 Devcontainer configuration is provided for VSCode.
 
 - Remote SSH into cair-gpu17
-- Clone this repo somewhere.
+- Clone THIS repo somewhere.
+- Open repo as a folder (project) in VSCode.
 - Run the `.devcontainer/build` script to create `devcontainer.json` file for the devcontainer, with proper user and stuff.
 ```bash
 ./.devcontainer/build
 ```
-- Open repository as a folder (project) in VSCode.
+
 - When prompted to open in devcontainer, select "Reopen in Container".
-- If not prompted, open the command palette (Ctrl+Shift+P), and select "Dev Containers: Reopen in Container".
+    - If not prompted, open the command palette (Ctrl+Shift+P), and select "Dev Containers: Reopen in Container".
 - You should be dropped in `/workspace` folder inside the container, with all the files and environment installed.
 - Any changes to files in the devcontainer will be reflected on the host machine, and vice versa.
 
