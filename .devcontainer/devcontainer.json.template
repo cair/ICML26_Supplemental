@@ -23,7 +23,7 @@
     ],
     "workspaceFolder": "/workspace",
     "overrideCommand": true,
-    "postStartCommand": "pixi install && tmux new -A -d -s do_not_close",
+    "postStartCommand": "pixi install && tmux new -A -d -s do_not_close \\; set -g mouse on",
     "shutdownAction": "none",
     "customizations": {
         "vscode": {
