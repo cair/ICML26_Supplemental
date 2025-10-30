@@ -27,7 +27,7 @@ Devcontainer configuration is provided for VSCode.
     - If your experiments are large (time-wise), can change `gpu_polling_rate` to 0.5
     - If your experiments are small (time-wise. e.g. training epoch takes 5 secs), change `gpu_polling_rate` to 0.01
 - Epochs = 50, num_test_reps = 5 (these have already been set as default, so no need to pass these parameters in <your_file> for benchmarking)
-- First test the script - activate the environment using `pixi shell` and run `python <your_file>`.
+- To test the script - activate the environment using `pixi shell` and run `python <your_file>`.
 - To run the benchmark use `pixi run bm <your_folder>/<your_file> <gpuid>`. 
 
     - to get <gpuid>, run `nvtop` or `nvidia-smi`, check which gpu is free, choose that.
