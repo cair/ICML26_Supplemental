@@ -111,8 +111,6 @@ def load_or_create_graphs(ds_dir):
 
 if __name__ == "__main__":
     x_train, y_train, graphs_train, x_test, y_test, graphs_test = load_or_create_graphs("./Mayur/mnist/data")
-    breakpoint()
-
 
     save_dir = f"./Mayur/mnist/results/{datetime.now().strftime('%a_%d_%b_%Y_%I_%M_%S_%p')}"
     os.makedirs(save_dir, exist_ok=True)
