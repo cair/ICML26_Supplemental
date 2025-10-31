@@ -368,36 +368,32 @@ class Benchmark:
         print(f"=============Running model: {model_name}=============")
         for split_name, (train_idx, val_idx) in self.splits.items():
             print(f"=============Running split: {split_name}=============")
-            graphs_train_split = self.graphs_train[train_idx]
             y_train_split = self.Y_train[train_idx]
-            graphs_val_split = self.graphs_train[val_idx]
             y_val_split = self.Y_train[val_idx]
             x_train_split = self.X_train[train_idx]
             x_val_split = self.X_train[val_idx]
 
-            if model_name == "GTM":
+            if model_name == "GTM" and self.gtm_args is not None:
+                graphs_train_split = self.graphs_train[train_idx]
+                graphs_val_split = self.graphs_train[val_idx]
                 self.fit_gtm(graphs_train_split, y_train_split, graphs_val_split, y_val_split, split_name)
-            elif model_name == "XGB":
+            if model_name == "XGB" and self.xgb_args is not None:
                 self.fit_xgb(x_train_split, y_train_split, x_val_split, y_val_split, split_name)
-            elif model_name == "Vanilla_TM":
+            if model_name == "Vanilla_TM" and self.vanilla_tm_args is not None:
                 self.fit_vanilla_tm(x_train_split, y_train_split, x_val_split, y_val_split, split_name)
-            elif model_name == "CoTM":
+            if model_name == "CoTM" and self.cotm_args is not None:
                 self.fit_cotm(x_train_split, y_train_split, x_val_split, y_val_split, split_name)
-            else:
-                raise ValueError(f"Unknown model name: {model_name}")
 
         for rep in range(self.num_test_reps):
             print(f"=============Final evaluation on test set ---- {rep}=============")
-            if model_name == "GTM":
+            if model_name == "GTM" and self.gtm_args is not None:
                 self.fit_gtm(self.graphs_train, self.Y_train, self.graphs_test, self.Y_test, f"test_{rep}")
-            elif model_name == "XGB":
+            if model_name == "XGB" and self.xgb_args is not None:
                 self.fit_xgb(self.X_train, self.Y_train, self.X_test, self.Y_test, f"test_{rep}")
-            elif model_name == "Vanilla_TM":
+            if model_name == "Vanilla_TM" and self.vanilla_tm_args is not None:
                 self.fit_vanilla_tm(self.X_train, self.Y_train, self.X_test, self.Y_test, f"test_{rep}")
-            elif model_name == "CoTM":
+            if model_name == "CoTM" and self.cotm_args is not None:
                 self.fit_cotm(self.X_train, self.Y_train, self.X_test, self.Y_test, f"test_{rep}")
-            else:
-                raise ValueError(f"Unknown model name: {model_name}")
 
     def run(self):
         for model_name in ["XGB", "GTM", "Vanilla_TM", "CoTM"]:
