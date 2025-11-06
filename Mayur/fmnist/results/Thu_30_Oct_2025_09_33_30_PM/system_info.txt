@@ -1,0 +1,7 @@
+cpu_name	Intel(R) Xeon(R) Platinum 8480C
+cpu_cores	224
+cpu_freq_mhz	3800.0
+total_ram_gb	2015.55
+os	Linux-6.8.0-71-generic-x86_64-with-glibc2.39
+gpu_name	NVIDIA H100 80GB HBM3
+mem_info	c_nvmlMemory_t(total: 85520809984 B, free: 84459388928 B, used: 1061421056 B)
