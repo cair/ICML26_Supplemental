@@ -1,0 +1,143 @@
+import numpy as np
+import random
+
+from graphtm_exp.graph import Graphs
+from graphtm_exp.benchmark import Benchmark
+
+
+random.seed(42)
+
+
+def generate_graphs(symbols, noise, graph_args: dict):
+    graphs = Graphs(**graph_args)
+    number_of_examples = graph_args["number_of_graphs"]
+
+    for graph_id in range(number_of_examples):
+        graphs.set_number_of_graph_nodes(graph_id, 2)
+
+    graphs.prepare_node_configuration()
+
+    for graph_id in range(number_of_examples):
+        for node_id in range(graphs.number_of_graph_nodes[graph_id]):
+            number_of_edges = 1
+            graphs.add_graph_node(graph_id, node_id, number_of_edges)
+
+    graphs.prepare_edge_configuration()
+
+    X = np.empty((number_of_examples, 2))
+    Y = np.empty(number_of_examples, dtype=np.uint32)
+
+    for graph_id in range(number_of_examples):
+        edge_type = "Plain"
+        source_node_id = 0
+        destination_node_id = 1
+        graphs.add_graph_node_edge(graph_id, source_node_id, destination_node_id, edge_type)
+
+        source_node_id = 1
+        destination_node_id = 0
+        graphs.add_graph_node_edge(graph_id, source_node_id, destination_node_id, edge_type)
+
+        x1 = random.choice(symbols)
+        x2 = random.choice(symbols)
+        X[graph_id] = np.array([x1, x2])
+        if (x1 % 2) == (x2 % 2):
+            Y[graph_id] = 0
+        else:
+            Y[graph_id] = 1
+
+        graphs.add_graph_node_property(graph_id, 0, x1)
+        graphs.add_graph_node_property(graph_id, 1, x2)
+
+        if np.random.rand() <= noise:
+            Y[graph_id] = 1 - Y[graph_id]
+
+    graphs.encode()
+
+    return graphs, X.astype(np.uint32), Y.astype(np.uint32)
+
+
+def bin_X(X, bins):
+    # One-hot each feature into bins
+    num_samples, num_features = X.shape
+    X_binned = np.zeros((num_samples, num_features, bins), dtype=np.uint32)
+
+    X_binned[np.arange(num_samples), 0, X[:, 0]] = 1
+    X_binned[np.arange(num_samples), 1, X[:, 1]] = 1
+    return X_binned.reshape(num_samples, num_features * bins)
+
+
+if __name__ == "__main__":
+    noise = 0.05
+    num_value = 100
+    symbols = [i for i in range(num_value)]
+    graph_params = {
+        "number_of_graphs": 10000,
+        "hypervector_size": 2048,
+        "hypervector_bits": 2,
+        "double_hashing": True,
+        "symbols": symbols,
+    }
+
+    graphs_train, X_train, Y_train = generate_graphs(symbols, noise, graph_params)
+    graphs_test, X_test, y_test = generate_graphs(
+        symbols,
+        0.0,
+        {
+            "number_of_graphs": 1000,
+            "init_with": graphs_train,
+        },
+    )
+
+    X_train = bin_X(X_train, num_value)
+    X_test = bin_X(X_test, num_value)
+
+    save_dir = "./temp"
+
+    gtm_params = {
+        "number_of_clauses": 1000,
+        "T": 2000,
+        "s": 1,
+        "message_size": 2048,
+        "message_bits": 2,
+        "double_hashing": True,
+        "depth": 2,
+        # "grid": (16 * 13, 1, 1),
+        # "block": (128, 1, 1),
+    }
+
+    vantm_params = {
+        "number_of_clauses": 1000,
+        "T": 2000,
+        "s": 1,
+        "platform": "GPU",
+        "weighted_clauses": True,
+    }
+
+    cotm_params = {
+        "number_of_clauses": 1000,
+        "T": 2000,
+        "s": 1,
+        "dim": (X_train.shape[1], 1, 1),
+        "patch_dim": (X_train.shape[1], 1),
+        # "grid": (16 * 13, 1, 1),
+        # "block": (128, 1, 1),
+    }
+
+    xgb_params = {}
+
+    bm = Benchmark(
+        X=X_train,
+        Y=Y_train,
+        graphs=graphs_train,
+        save_dir=save_dir,
+        name="mvxor",
+        gtm_args=gtm_params,
+        xgb_args=xgb_params,
+        # vanilla_tm_args=vantm_params,
+        cotm_args=cotm_params,
+        X_test=X_test,
+        Y_test=y_test,
+        graphs_test=graphs_test,
+        epochs=10,
+    )
+    bm.run()

@@ -38,12 +38,15 @@ Devcontainer configuration is provided for VSCode.
     - This will run the benchmark in a new tmux session, so that the experiment does not stop if the devcontainer is disconnected. 
 
     - To view, run `tmux attach`.
+    - Ctrl+B, followed by D to detach from tmux again
 
 - Output is a csv file (results) and a pickle file(splits)
 
     - Results are on different validation splits, using different models, and reported as 'all classes' and 'per class'
 
-
+### Comparing results
+- Open the jupyter notebook `model_performance_analysis.ipynb`
+- Set your result filename (as saved by the benchmarking) at `file_path`
 
 ## Details
 
