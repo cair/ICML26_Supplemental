@@ -7,7 +7,7 @@ from sklearn.decomposition import TruncatedSVD
 import pandas as pd
 import numpy as np
 
-from elliot.data.movielens_labels import AGE_DICT, OCCUPATION_DICT, GENDER_DICT
+from movielens_labels import AGE_DICT, OCCUPATION_DICT, GENDER_DICT
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -49,7 +49,7 @@ class Booleanizer:
 		pre = FunctionTransformer(_unpack_bits, validate=False, kw_args={'nbits': self.max_bits_per_feature})
 		return pre.fit_transform(X_transformed)
 
-DATASET_PATHS = ["../data/movielens_1m_multilabel/0/", "../data/movielens_1m_multilabel/0/"]
+DATASET_PATHS = ["data/movielens_1m_multilabel/0/", "data/movielens_1m_multilabel/0/"]
 DATASET_PATH = None
 for path in DATASET_PATHS:
     if os.path.exists(path):
@@ -80,7 +80,7 @@ def build_rating_vector(items, ratings, classes):
     item_to_rating = dict(zip(items, ratings))
     return [item_to_rating.get(item, 0) for item in classes]
 
-ADDITIONAL_MOVIELENS_DATA_PATH = "elliot/data/movielens_1m_multilabel/ml-1m"
+ADDITIONAL_MOVIELENS_DATA_PATH = "data/movielens_1m_multilabel/ml-1m"
 USER_DATA_MLB_COLUMNS = {
     "gender": {"how": "direct", "dict": GENDER_DICT},
     "age": {"how": "lb", "dict": AGE_DICT},

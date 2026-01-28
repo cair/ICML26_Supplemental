@@ -6,10 +6,9 @@ import pandas as pd
 import time
 from sklearn.preprocessing import MultiLabelBinarizer
 import logging
-import wandb
+#import wandb
 import pickle
 
-from tmu.tools import BenchmarkTimer
 from data_loader_movielens import load_train_test_datasets, augment_movielens_dataset
 from GraphTsetlinMachine.graphs import Graphs
 from GraphTsetlinMachine.tm import MultiOutputGraphTsetlinMachine
@@ -277,41 +276,32 @@ def main(args, use_wandb=False, wandb_name=None):
         double_hashing = args.double_hashing,
         one_hot_encoding = args.one_hot_encoding,
         grid=(16*13*4,1,1), #h100 config (see gtm repo)
-        #grid=(16*13,1,1), #h100 config (see gtm repo)
         block=(128,1,1) #h100 config
     )
 
-    benchmark_total = BenchmarkTimer(logger=None, text="Epoch Time")
-    with benchmark_total:
-        for epoch in tqdm(range(args.epochs)):
-            epoch_dict = {}
-            epoch_train_time = 0
-            benchmark1 = BenchmarkTimer(logger=None, text="Training Time")
-            with benchmark1:
-                Y_train_ratings = get_labels(train_df)
-                tm.fit(graphs_train, Y_train_ratings, epochs=1, incremental=True)
-            epoch_train_time += benchmark1.elapsed()
+    for epoch in tqdm(range(args.epochs)):
+        epoch_dict = {}
+        Y_train_ratings = get_labels(train_df)
+        tm.fit(graphs_train, Y_train_ratings, epochs=1, incremental=True)
 
-            benchmark2 = BenchmarkTimer(logger=None, text="Testing Time")
-            with benchmark2:
-                train_predictions = tm.score(graphs_train)
-                test_predictions = tm.score(graphs_test)
+        train_predictions = tm.score(graphs_train)
+        test_predictions = tm.score(graphs_test)
 
-                for k in K_VALUES: # Evaluate multiple k values for wandb logging
-                    epoch_dict[f"Train_HR@{k}"] = calculate_hit_rate(train_df, train_predictions, mlb, k=k)
-                    epoch_dict[f"Train_NDCG@{k}"] = calculate_ndcg(train_df, train_predictions, mlb, k=k)
-                    epoch_dict[f"Test_HR@{k}"] = calculate_hit_rate(test_df, test_predictions, mlb, k=k)
-                    epoch_dict[f"Test_NDCG@{k}"] = calculate_ndcg(test_df, test_predictions, mlb, k=k)
+        for k in K_VALUES: # Evaluate multiple k values for wandb logging
+            epoch_dict[f"Train_HR@{k}"] = calculate_hit_rate(train_df, train_predictions, mlb, k=k)
+            epoch_dict[f"Train_NDCG@{k}"] = calculate_ndcg(train_df, train_predictions, mlb, k=k)
+            epoch_dict[f"Test_HR@{k}"] = calculate_hit_rate(test_df, test_predictions, mlb, k=k)
+            epoch_dict[f"Test_NDCG@{k}"] = calculate_ndcg(test_df, test_predictions, mlb, k=k)
 
 
 
-            test_time = benchmark2.elapsed()
-            if use_wandb:
-                run.log(epoch_dict)
-            PRINT_K = 50
-            print(f"Epoch {epoch+1}/{args.epochs} - Train Time: {epoch_train_time:.2f}s, Test Time: {test_time:.2f}s, \n\
-            Test HR@{PRINT_K}: {epoch_dict[f'Test_HR@{PRINT_K}']:.2f}%, Train HR@{PRINT_K}: {epoch_dict[f'Train_HR@{PRINT_K}']:.2f}%, \n\
-            Test NDCG@{PRINT_K}: {epoch_dict[f'Test_NDCG@{PRINT_K}']:.4f}, Train NDCG@{PRINT_K}: {epoch_dict[f'Train_NDCG@{PRINT_K}']:.4f}")
+        if use_wandb:
+            run.log(epoch_dict)
+        PRINT_K = 50
+        # Removed timers to reduce dependencies.
+        print(f"Epoch {epoch+1}/{args.epochs}\n\
+        Test HR@{PRINT_K}: {epoch_dict[f'Test_HR@{PRINT_K}']:.2f}%, Train HR@{PRINT_K}: {epoch_dict[f'Train_HR@{PRINT_K}']:.2f}%, \n\
+        Test NDCG@{PRINT_K}: {epoch_dict[f'Test_NDCG@{PRINT_K}']:.4f}, Train NDCG@{PRINT_K}: {epoch_dict[f'Train_NDCG@{PRINT_K}']:.4f}")
 
     # Save the model for interpretability analysis
     tm.save(os.path.join(RUN_FOLDER, f"graphtm_movielens_model_{args.exp_id}.gtm"))
