@@ -1,0 +1,24 @@
+# NOTE: We have not included the ELLIOT module itself in this repo. Please download this sperately
+common_meta: &common_meta
+  save_recs: False
+
+experiment:
+  dataset: vibrent_rental_dataset
+  prefiltering:
+    strategy: iterative_k_core
+    core: 2
+  data_config:
+    strategy: dataset
+    dataset_path: ../data/movielens_1m/dataset.tsv
+  splitting:
+    save_on_disk: True
+    save_folder: ../data/movielens_1m_multilabel
+    test_splitting:
+      strategy: temporal_hold_out
+      test_ratio: 0.2
+  models:
+    MostPop:
+      meta: *common_meta
+  evaluation:
+    simple_metrics: [nDCG, HR, Precision, Recall, F1, Gini, APLT, ARP, ItemCoverage]
+  top_k: 10
